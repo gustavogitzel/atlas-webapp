@@ -1,28 +1,67 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 interface UseSnapScrollOptions {
   preventScroll?: boolean;
 }
 
+const smoothScroll = (target: number, duration: number) => {
+  const start = window.pageYOffset;
+  const distance = target - start;
+  let startTime: number | null = null;
+
+  const animation = (currentTime: number) => {
+    if (startTime === null) startTime = currentTime;
+    const timeElapsed = currentTime - startTime;
+    const progress = Math.min(timeElapsed / duration, 1);
+    
+    // Easing function for smoother animation
+    const ease = (t: number) => t < 0.5 
+      ? 2 * t * t 
+      : -1 + (4 - 2 * t) * t;
+
+    window.scrollTo(0, start + distance * ease(progress));
+
+    if (timeElapsed < duration) {
+      requestAnimationFrame(animation);
+    }
+  };
+
+  requestAnimationFrame(animation);
+};
+
 export const useSnapScroll = (options: UseSnapScrollOptions = {}) => {
+  // Check for native smooth scroll support
+  const supportsNativeSmoothScroll = 'scrollBehavior' in document.documentElement.style;
+  
+  const scrollTo = useCallback((target: number, smooth = true) => {
+    if (smooth && !supportsNativeSmoothScroll) {
+      smoothScroll(target, 800);
+    } else {
+      window.scrollTo({
+        top: target,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+  }, [supportsNativeSmoothScroll]);
+
   useEffect(() => {
     let lastScrollTop = 0;
     let isScrolling = false;
     let scrollTimeout: NodeJS.Timeout;
-    const threshold = 50; // Reduzido para maior sensibilidade
-    const animationDuration = 1200; // Duração aumentada para scroll mais suave
+    const threshold = 30;
     
     if (options.preventScroll) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden'; // for Firefox
+      document.body.style.height = '100vh';
     }
 
     const handleScroll = () => {
       if (isScrolling) return;
 
-      // Clear any existing timeout
       clearTimeout(scrollTimeout);
 
-      const currentScrollTop = window.scrollY;
+      const currentScrollTop = window.pageYOffset;
       const windowHeight = window.innerHeight;
       const scrollDirection = currentScrollTop > lastScrollTop ? 'down' : 'up';
       const scrollDiff = Math.abs(currentScrollTop - lastScrollTop);
@@ -31,35 +70,32 @@ export const useSnapScroll = (options: UseSnapScrollOptions = {}) => {
         isScrolling = true;
         const targetScrollTop = scrollDirection === 'down' ? windowHeight : 0;
 
-        // Força o scroll para a seção completa
-        window.scrollTo({
-          top: targetScrollTop,
-          behavior: 'smooth'
-        });
+        scrollTo(targetScrollTop);
 
-        // Aguarda a animação completa antes de permitir novo scroll
         scrollTimeout = setTimeout(() => {
           isScrolling = false;
           lastScrollTop = targetScrollTop;
           
-          // Garante que a página está exatamente na posição correta
-          window.scrollTo({
-            top: targetScrollTop,
-            behavior: 'auto'
-          });
-        }, animationDuration);
+          if (Math.abs(window.pageYOffset - targetScrollTop) > 1) {
+            scrollTo(targetScrollTop, false);
+          }
+        }, 800);
       }
 
       lastScrollTop = currentScrollTop;
     };
 
-    window.addEventListener('scroll', handleScroll);
+    // Adiciona listeners com passive true para melhor performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (options.preventScroll) {
         document.body.style.overflow = 'auto';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
       }
     };
-  }, [options.preventScroll]);
+  }, [options.preventScroll, scrollTo]);
 };

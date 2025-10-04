@@ -1,0 +1,132 @@
+.satelite-page {
+  width: 100%;
+  height: 100vh;
+  background: #0b1220; /* dark */
+  color: #e6eefb;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.page-title {
+  text-align: center;
+  margin-bottom: 18px;
+  z-index: 10;
+}
+
+.page-title h1 {
+  font-size: 28px;
+  color: #2dd4bf; /* cyan-300-ish */
+  margin: 0 0 6px 0;
+}
+
+.page-title p {
+  color: #bfcfe0;
+  margin: 0;
+}
+
+.sat-wrapper {
+  width: 100%;
+  max-width: 960px;
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sat-area {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 16 / 9;
+}
+
+.satelite-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
+.hotspot-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: rgba(34,211,238,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 200ms ease;
+}
+
+.hotspot:hover .hotspot-dot {
+  transform: scale(1.15);
+}
+
+.hotspot-core {
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(10,20,40,0.2);
+  animation: pulse 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.14); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* overlay and modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 0;
+}
+
+.modal-card {
+  position: fixed;
+  width: 480px;
+  max-width: calc(100% - 32px);
+  min-height: 120px;
+  background: linear-gradient(180deg, #0f1724, #091022);
+  border: 1px solid rgba(45,212,191,0.08);
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(2,8,23,0.6);
+  color: #e6eefb;
+  transform: translateZ(0);
+}
+
+.modal-title {
+  font-size: 18px;
+  color: #2dd4bf;
+  margin: 0 0 8px 0;
+}
+
+.modal-body {
+  margin: 0;
+  color: #cbd8ee;
+  line-height: 1.4;
+}
+
+.sat-widget {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+}

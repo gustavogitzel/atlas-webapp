@@ -16,7 +16,7 @@ export default {
         'terra-indigo': '#6366f1',
         'dark-blue': '#0B1840',
         'navy': '#0A005A',
-        'purple': '5833A6',
+        'purple': '#5833A6',
         'black': '#222222',
       },
       fontFamily: {

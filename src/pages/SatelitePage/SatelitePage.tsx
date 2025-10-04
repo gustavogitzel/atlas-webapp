@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import sat from "../../assets/sat.png";
+import Sat from "../../components/sat/Sat";
+import './SatelitePage.css';
 
 // Data for Terra's five main instruments
 const instruments = [
@@ -37,67 +39,107 @@ const instruments = [
 
 // The main component for the page
 export const SatelitePage = () => {
-  const [activeInstrument, setActiveInstrument] = useState(null);
+  const [activeInstrument, setActiveInstrument] = useState<any>(null);
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const hotspotCenter = useRef<{ x: number; y: number } | null>(null);
 
-  // Function to show the modal with instrument info
-  const handleShowModal = (instrument) => {
+  const FOLLOW_RADIUS = 220; // px
+
+  const handleShowModal = (instrument: any, e?: React.MouseEvent) => {
     setActiveInstrument(instrument);
+    
+    if (e && e.currentTarget) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      hotspotCenter.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
   };
 
-  // Function to hide the modal
-  const handleHideModal = () => {
-    setActiveInstrument(null);
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setMouse({ x: e.clientX, y: e.clientY });
   };
+
+  const computeModalPos = () => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const modalW = 480;
+    const modalH = 180;
+
+    // base centered position
+    const centerLeft = Math.max((vw - modalW) / 2, 12);
+    const centerTop = Math.max((vh - modalH) / 2, 12);
+
+    if (activeInstrument && hotspotCenter.current) {
+      const dx = mouse.x - hotspotCenter.current.x;
+      const dy = mouse.y - hotspotCenter.current.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // only follow if mouse is reasonably close to the hotspot
+      if (dist <= FOLLOW_RADIUS) {
+        const MAX_OFFSET = 10; // px maximum shift from center
+        // proportional scale based on distance (closer -> smaller proportion but still limited)
+        const t = Math.min(dist / FOLLOW_RADIUS, 1);
+        const scale = t * MAX_OFFSET;
+        // direction from hotspot to mouse
+        const nx = dist === 0 ? 0 : dx / dist;
+        const ny = dist === 0 ? 0 : dy / dist;
+        const ox = nx * scale;
+        const oy = ny * scale;
+
+        const left = Math.min(Math.max(centerLeft + ox, 12), vw - modalW - 12);
+        const top = Math.min(Math.max(centerTop + oy, 12), vh - modalH - 12);
+        return { left, top };
+      }
+    }
+
+    return { left: centerLeft, top: centerTop };
+  };
+
+  const modalPos = activeInstrument ? computeModalPos() : null;
 
   return (
-    <div className="w-full h-screen bg-gray-900 flex flex-col justify-center items-center p-8 text-white font-sans overflow-hidden">
-      
-      {/* --- Main Title --- */}
-      <div className="text-center mb-8 z-10">
-        <h1 className="text-4xl md:text-5xl font-bold text-cyan-300">NASA's Terra Satellite</h1>
-        <p className="text-lg text-gray-300 mt-2">Hover over the glowing hotspots to learn about the instruments.</p>
+    <div className="satelite-page" onMouseMove={handleMouseMove}>
+      <div className="page-title">
+        <h1>NASA's Terra Satellite</h1>
+        <p>Click the glowing hotspots to learn about the instruments.</p>
       </div>
-      
-      {/* --- Satellite and Hotspots Container --- */}
-      <div className="relative w-full max-w-3xl aspect-video">
-        
-        {/* Replace this src with the path to your satellite image */}
-        
-        <img 
-          src={sat} 
-          alt="Terra Satellite" 
-          className="w-full h-full object-contain"
-        />
 
-        {/* --- Instrument Hotspots --- */}
-        {instruments.map((instrument) => (
-          <div
-            key={instrument.id}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2"
-            style={{ top: instrument.position.top, left: instrument.position.left }}
-            onMouseEnter={() => handleShowModal(instrument)}
-            onMouseLeave={handleHideModal}
-          >
-            <div className="w-5 h-5 md:w-7 md:h-7 rounded-full bg-cyan-400/60 flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-125">
-              <div className="w-3 h-3 md:w-4 md:h-4 bg-white rounded-full animate-pulse"></div>
+      <div className="sat-wrapper">
+        <div className="sat-area">
+          <img src={sat} alt="Terra Satellite" className="satelite-image" />
+
+          {instruments.map((instrument) => (
+            <div
+              key={instrument.id}
+              className="hotspot"
+              style={{ top: instrument.position.top, left: instrument.position.left }}
+              onClick={(e) => handleShowModal(instrument, e)}
+            >
+              <div className="hotspot-dot">
+                <div className="hotspot-core" />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* --- Modal Window --- */}
-      {/* This section will only be visible when an instrument is active */}
       {activeInstrument && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 transition-opacity duration-300">
-          <div className="bg-gray-800 border border-cyan-400/50 rounded-lg shadow-2xl max-w-lg w-full p-6 mx-auto">
-            <h2 className="text-2xl font-bold text-cyan-300 mb-3">{activeInstrument.name}</h2>
-            <p className="text-gray-200 text-base leading-relaxed">
-              {activeInstrument.description}
-            </p>
+        <div className="overlay" onClick={() => { setActiveInstrument(null); }}>
+          <div
+            className="modal-card"
+            style={{ left: modalPos?.left, top: modalPos?.top }}
+            onMouseEnter={() => {/* keep modal open while hovering */}}
+            onMouseLeave={() => {/* nothing - modal stays until closed */}}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="modal-title">{activeInstrument.name}</h2>
+            <p className="modal-body">{activeInstrument.description}</p>
           </div>
         </div>
       )}
 
+      <div className="sat-widget">
+        <Sat text="Select a bubble and explore TERRA's instruments!" avatarSize={150} />
+      </div>
     </div>
   );
 };

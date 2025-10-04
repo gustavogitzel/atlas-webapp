@@ -72,21 +72,21 @@ export const TimelineControls = ({
           size="md"
         />
 
-        <IconButton
-          icon={isPlaying ? <Pause /> : <Play />}
-          onClick={onPlayPause}
-          variant="primary"
-          size="lg"
-          className="relative"
-        >
+        <div className="relative">
+          <IconButton
+            icon={isPlaying ? <Pause /> : <Play />}
+            onClick={onPlayPause}
+            variant="primary"
+            size="lg"
+          />
           {isPlaying && (
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-              className="absolute inset-0 rounded-full border-4 border-white/20 border-t-white/60"
+              className="absolute inset-0 rounded-full border-4 border-white/20 border-t-white/60 pointer-events-none"
             />
           )}
-        </IconButton>
+        </div>
 
         <IconButton
           icon={<SkipForward />}

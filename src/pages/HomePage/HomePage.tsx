@@ -25,13 +25,15 @@ export const HomePage = () => {
   };
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const heroSection = document.querySelector('#hero-section');
+    heroSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <div className="relative">
       {/* Hero Section */}
       <div 
+        id="hero-section"
         style={{ 
           backgroundImage: `linear-gradient(to bottom right, rgba(0, 0, 128, 0.5), rgba(0, 0, 128, 0.3)), url(${backgroundHome})`,
           backgroundSize: 'cover',

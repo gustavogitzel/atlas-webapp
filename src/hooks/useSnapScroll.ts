@@ -59,30 +59,33 @@ export const useSnapScroll = (options: UseSnapScrollOptions = {}) => {
     const handleScroll = () => {
       if (isScrolling) return;
 
-      clearTimeout(scrollTimeout);
-
       const currentScrollTop = window.pageYOffset;
       const windowHeight = window.innerHeight;
       const scrollDirection = currentScrollTop > lastScrollTop ? 'down' : 'up';
       const scrollDiff = Math.abs(currentScrollTop - lastScrollTop);
 
+      // Apenas processa se houver diferença significativa no scroll
       if (scrollDiff > threshold) {
         isScrolling = true;
         const targetScrollTop = scrollDirection === 'down' ? windowHeight : 0;
 
+        // Limpa timeout anterior
+        clearTimeout(scrollTimeout);
+        
+        // Atualiza lastScrollTop antes do scroll
+        lastScrollTop = targetScrollTop;
+        
         scrollTo(targetScrollTop);
 
         scrollTimeout = setTimeout(() => {
           isScrolling = false;
-          lastScrollTop = targetScrollTop;
           
+          // Garante alinhamento preciso
           if (Math.abs(window.pageYOffset - targetScrollTop) > 1) {
             scrollTo(targetScrollTop, false);
           }
         }, 800);
       }
-
-      lastScrollTop = currentScrollTop;
     };
 
     // Adiciona listeners com passive true para melhor performance

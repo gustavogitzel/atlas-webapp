@@ -7,6 +7,8 @@ import { IconButton } from '@atoms/IconButton';
  * Controls for timeline playback with animations
  */
 
+export type TimeGrouping = 'daily' | '5-days' | 'weekly' | 'monthly';
+
 export interface TimelineControlsProps {
   currentDate: string;
   currentIndex: number;
@@ -14,11 +16,13 @@ export interface TimelineControlsProps {
   currentCount: number;
   isPlaying: boolean;
   playbackSpeed: number;
+  grouping?: TimeGrouping;
   onPlayPause: () => void;
   onSkipBack: () => void;
   onSkipForward: () => void;
   onTimelineChange: (index: number) => void;
   onSpeedChange: (speed: number) => void;
+  onGroupingChange?: (grouping: TimeGrouping) => void;
   startDate?: string;
   endDate?: string;
 }
@@ -30,11 +34,13 @@ export const TimelineControls = ({
   currentCount,
   isPlaying,
   playbackSpeed,
+  grouping = '5-days',
   onPlayPause,
   onSkipBack,
   onSkipForward,
   onTimelineChange,
   onSpeedChange,
+  onGroupingChange,
   startDate,
   endDate,
 }: TimelineControlsProps) => {
@@ -42,28 +48,30 @@ export const TimelineControls = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 100 }}
+      initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-black/95 to-gray-900/95 backdrop-blur-xl border border-orange-500/30 rounded-3xl p-8 w-full max-w-[900px] shadow-2xl shadow-orange-500/20"
+      className="bg-black/80 backdrop-blur-md border border-white/20 rounded-lg shadow-lg p-4 md:p-6 w-full max-w-md"
     >
       {/* Current Date Display */}
-      <div className="text-center mb-6">
-        <div className="text-sm text-gray-400 uppercase tracking-wider mb-2">Data Atual</div>
+      <div className="text-center mb-3 md:mb-4">
+        <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+          {grouping === 'daily' ? 'Current Date' : 'Current Period'}
+        </div>
         <motion.div
           key={currentDate}
-          initial={{ scale: 0.9, opacity: 0 }}
+          initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-5xl font-bold bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 bg-clip-text text-transparent"
+          className="text-2xl md:text-3xl font-bold text-white"
         >
           {currentDate}
         </motion.div>
-        <div className="text-sm text-gray-400 mt-2">
-          {currentCount} focos detectados • Dia {currentIndex + 1} de {totalDates}
+        <div className="text-xs text-gray-400 mt-1">
+          {currentCount} fires • {grouping === 'daily' ? 'Day' : grouping === '5-days' ? '5-Day Period' : grouping === 'weekly' ? 'Week' : 'Month'} {currentIndex + 1} of {totalDates}
         </div>
       </div>
 
       {/* Playback Controls */}
-      <div className="flex items-center justify-center gap-6 mb-6">
+      <div className="flex items-center justify-center gap-4 md:gap-6 mb-4 md:mb-6">
         <IconButton
           icon={<SkipBack />}
           onClick={onSkipBack}
@@ -98,14 +106,14 @@ export const TimelineControls = ({
       </div>
 
       {/* Timeline Slider */}
-      <div className="relative px-4">
+      <div className="relative mb-4">
         {/* Progress Bar Background */}
-        <div className="absolute top-1/2 left-4 right-4 h-2 bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-full transform -translate-y-1/2" />
+        <div className="h-2 bg-white/20 rounded-full" />
 
         {/* Progress Bar Fill */}
         <div
-          className="absolute top-1/2 left-4 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full transform -translate-y-1/2 transition-all duration-300"
-          style={{ width: `calc(${progressPercentage}% * (100% - 2rem) / 100)` }}
+          className="absolute top-0 h-2 bg-orange-500 rounded-full transition-all duration-300"
+          style={{ width: `${progressPercentage}%` }}
         />
 
         {/* Slider Input */}
@@ -115,30 +123,24 @@ export const TimelineControls = ({
           max={totalDates - 1}
           value={currentIndex}
           onChange={(e) => onTimelineChange(parseInt(e.target.value))}
-          className="relative w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-10 timeline-slider"
+          className="absolute top-0 w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-10 timeline-slider"
         />
 
         {/* Date Markers */}
         {startDate && endDate && (
-          <div className="flex justify-between mt-4 px-2">
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1">Início</div>
-              <div className="text-sm font-semibold text-orange-400">{startDate}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1">Fim</div>
-              <div className="text-sm font-semibold text-red-400">{endDate}</div>
-            </div>
+          <div className="flex justify-between mt-3 text-xs">
+            <div className="text-gray-400">{startDate}</div>
+            <div className="text-gray-400">{endDate}</div>
           </div>
         )}
       </div>
 
       {/* Playback Speed Control */}
-      <div className="mt-6 pt-6 border-t border-white/10">
+      <div className="pt-4 border-t border-white/20">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-gray-400">Velocidade</span>
-          <span className="text-sm font-semibold text-white">
-            {playbackSpeed < 500 ? '🚀 Rápido' : playbackSpeed < 1000 ? '⚡ Normal' : '🐢 Lento'}
+          <span className="text-xs text-gray-400">Speed</span>
+          <span className="text-xs font-medium text-white">
+            {playbackSpeed < 500 ? 'Fast' : playbackSpeed < 1000 ? 'Normal' : 'Slow'}
           </span>
         </div>
         <input
@@ -148,44 +150,98 @@ export const TimelineControls = ({
           step="100"
           value={playbackSpeed}
           onChange={(e) => onSpeedChange(parseInt(e.target.value))}
-          className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-green-500"
+          className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500"
         />
       </div>
+
+      {/* Time Grouping Control */}
+      {onGroupingChange && (
+        <div className="time-grouping pt-4 border-t border-white/20">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-400">Grouping</span>
+            <span className="text-xs font-medium text-white capitalize">
+              {grouping === '5-days' ? '5 Days' : grouping}
+            </span>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <button
+              onClick={() => onGroupingChange('daily')}
+              className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                grouping === 'daily'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+              }`}
+            >
+              Daily
+            </button>
+            <button
+              onClick={() => onGroupingChange('5-days')}
+              className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                grouping === '5-days'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+              }`}
+            >
+              5 Days
+            </button>
+            <button
+              onClick={() => onGroupingChange('weekly')}
+              className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                grouping === 'weekly'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+              }`}
+            >
+              Weekly
+            </button>
+            <button
+              onClick={() => onGroupingChange('monthly')}
+              className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                grouping === 'monthly'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+              }`}
+            >
+              Monthly
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Custom Slider Styles */}
       <style>{`
         .timeline-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 24px;
-          height: 24px;
+          width: 18px;
+          height: 18px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #f97316, #ef4444);
+          background: #f97316;
           cursor: pointer;
-          box-shadow: 0 0 20px rgba(249, 115, 22, 0.8);
-          border: 3px solid white;
+          border: 2px solid white;
+          box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
           transition: all 0.2s;
         }
         
         .timeline-slider::-webkit-slider-thumb:hover {
-          transform: scale(1.2);
-          box-shadow: 0 0 30px rgba(249, 115, 22, 1);
+          transform: scale(1.1);
+          box-shadow: 0 2px 12px rgba(249, 115, 22, 0.8);
         }
         
         .timeline-slider::-moz-range-thumb {
-          width: 24px;
-          height: 24px;
+          width: 18px;
+          height: 18px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #f97316, #ef4444);
+          background: #f97316;
           cursor: pointer;
-          box-shadow: 0 0 20px rgba(249, 115, 22, 0.8);
-          border: 3px solid white;
+          border: 2px solid white;
+          box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
           transition: all 0.2s;
         }
         
         .timeline-slider::-moz-range-thumb:hover {
-          transform: scale(1.2);
-          box-shadow: 0 0 30px rgba(249, 115, 22, 1);
+          transform: scale(1.1);
+          box-shadow: 0 2px 12px rgba(249, 115, 22, 0.8);
         }
       `}</style>
     </motion.div>

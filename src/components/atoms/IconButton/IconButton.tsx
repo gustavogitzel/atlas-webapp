@@ -1,57 +1,57 @@
 import { ReactNode } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
-import { clsx } from 'clsx';
+import { cn } from '@/lib/utils';
 
 /**
  * IconButton Atom Component
- * Button with icon and animations
+ * Button with icon and animations (shadcn/ui style)
  */
 
 export interface IconButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
   icon: ReactNode;
-  variant?: 'default' | 'primary' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  rounded?: boolean;
+  variant?: 'default' | 'primary' | 'destructive' | 'outline' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
 }
 
 const variantStyles = {
-  default: 'bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white',
-  primary: 'bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white',
-  danger: 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white',
-  ghost: 'bg-black/80 backdrop-blur-lg border border-white/20 hover:bg-white/10 text-white',
+  default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+  outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+  ghost: 'hover:bg-accent hover:text-accent-foreground',
 };
 
 const sizeStyles = {
-  sm: 'p-2',
-  md: 'p-4',
-  lg: 'p-6',
+  sm: 'h-9 w-9',
+  md: 'h-10 w-10',
+  lg: 'h-11 w-11',
+  icon: 'h-10 w-10',
 };
 
 const iconSizeStyles = {
-  sm: 'w-4 h-4',
-  md: 'w-6 h-6',
-  lg: 'w-8 h-8',
+  sm: 'h-4 w-4',
+  md: 'h-5 w-5',
+  lg: 'h-6 w-6',
+  icon: 'h-5 w-5',
 };
 
 export const IconButton = ({
   icon,
   variant = 'default',
-  size = 'md',
-  rounded = true,
+  size = 'icon',
   className,
   disabled,
   ...props
 }: IconButtonProps) => {
   return (
     <motion.button
-      whileHover={{ scale: disabled ? 1 : 1.1 }}
+      whileHover={{ scale: disabled ? 1 : 1.05 }}
       whileTap={{ scale: disabled ? 1 : 0.95 }}
-      className={clsx(
-        'inline-flex items-center justify-center',
-        'transition-all duration-200',
-        'disabled:opacity-30 disabled:cursor-not-allowed',
-        'shadow-lg',
-        rounded ? 'rounded-full' : 'rounded-2xl',
+      className={cn(
+        'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'disabled:pointer-events-none disabled:opacity-50',
         variantStyles[variant],
         sizeStyles[size],
         className
@@ -59,7 +59,7 @@ export const IconButton = ({
       disabled={disabled}
       {...props}
     >
-      <span className={clsx('flex items-center justify-center', iconSizeStyles[size])}>
+      <span className={cn('flex items-center justify-center', iconSizeStyles[size])}>
         {icon}
       </span>
     </motion.button>

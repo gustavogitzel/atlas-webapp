@@ -94,11 +94,17 @@ export function getPointColor(confidence: number, frp: number, fadeStage: number
 
 /**
  * Get point altitude based on FRP and fade stage
+ * @param frp - Fire Radiative Power
+ * @param fadeStage - Fade stage (0 = current, 1+ = older)
  */
 export function getPointAltitude(frp: number, fadeStage: number = 0): number {
   const { fadeStages } = FIRE_GLOBE_CONFIG;
-  const baseAltitude = Math.min(frp / 300, 0.5);
+  
+  // Direct mapping: higher FRP = higher altitude
+  // Using square root for better visual distribution
+  const baseAltitude = Math.min(Math.sqrt(frp) / 20, 0.5);
 
+  // Apply fade stage multiplier
   if (fadeStage >= 0 && fadeStage < fadeStages.length) {
     return baseAltitude * fadeStages[fadeStage].altitudeMultiplier;
   }

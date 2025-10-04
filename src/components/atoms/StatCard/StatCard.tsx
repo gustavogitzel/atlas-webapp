@@ -1,32 +1,36 @@
 import { ReactNode } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
-import { clsx } from 'clsx';
+import { cn } from '@/lib/utils';
 
 /**
  * StatCard Atom Component
- * Card for displaying statistics with animations
+ * Card for displaying statistics with animations (shadcn/ui style)
  */
 
 export interface StatCardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
   label: string;
   value: string | number;
   icon?: ReactNode;
-  variant?: 'default' | 'gradient' | 'fire';
+  variant?: 'default' | 'primary' | 'secondary' | 'destructive';
   subtitle?: string;
 }
 
 const variantStyles = {
   default: {
-    container: 'bg-black/80 backdrop-blur-lg border border-white/10',
-    value: 'text-white',
+    container: 'bg-card text-card-foreground border-border',
+    value: 'text-foreground',
   },
-  gradient: {
-    container: 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-lg border border-blue-500/30',
-    value: 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent',
+  primary: {
+    container: 'bg-primary/10 text-primary border-primary/20',
+    value: 'text-primary font-bold',
   },
-  fire: {
-    container: 'bg-black/80 backdrop-blur-lg border border-orange-500/30',
-    value: 'bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent',
+  secondary: {
+    container: 'bg-secondary text-secondary-foreground border-secondary',
+    value: 'text-secondary-foreground font-bold',
+  },
+  destructive: {
+    container: 'bg-destructive/10 text-destructive border-destructive/20',
+    value: 'text-destructive font-bold',
   },
 };
 
@@ -45,22 +49,22 @@ export const StatCard = ({
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={clsx(
-        'rounded-xl p-4 min-w-[140px]',
+      className={cn(
+        'rounded-lg border p-4 shadow-sm transition-colors min-w-[140px]',
         styles.container,
         className
       )}
       {...props}
     >
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-2">
         {icon && <span className="text-sm">{icon}</span>}
-        <h3 className="text-xs text-gray-400 uppercase tracking-wide">{label}</h3>
+        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</h3>
       </div>
-      <p className={clsx('text-2xl font-bold', styles.value)}>
+      <p className={cn('text-2xl font-bold', styles.value)}>
         {typeof value === 'number' ? value.toLocaleString() : value}
       </p>
       {subtitle && (
-        <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+        <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
       )}
     </motion.div>
   );

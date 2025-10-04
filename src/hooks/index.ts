@@ -4,3 +4,4 @@
 
 export * from './useNASAImagery';
 export * from './useGameState';
+export * from './useFireData';

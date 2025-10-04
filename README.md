@@ -97,7 +97,7 @@ npm install
 npm run dev
 ```
 
-O projeto estará disponível em `http://localhost:3000`
+O projeto estará disponível em `http://localhost:5173`
 
 ### Scripts Disponíveis
 
@@ -108,6 +108,30 @@ npm run preview    # Preview do build de produção
 npm run lint       # Executa ESLint
 npm run type-check # Verifica tipos TypeScript
 ```
+
+## 🚀 Deploy Automático
+
+O projeto usa **GitHub Actions** para deploy automático:
+
+- ✅ **CI/CD Pipeline** - Build e testes em cada push
+- ✅ **Auto Deploy** - Deploy automático para Vercel/Netlify
+- ✅ **Preview Deployments** - Preview para Pull Requests
+
+### Configurar Deploy:
+
+1. **Adicione secrets no GitHub** (Settings → Secrets → Actions):
+   - `VERCEL_TOKEN` - Token do Vercel
+   - `VERCEL_ORG_ID` - Organization ID
+   - `VERCEL_PROJECT_ID` - Project ID
+
+2. **Push para GitHub**:
+   ```bash
+   git push
+   ```
+
+3. **Deploy automático** acontece via GitHub Actions
+
+Ver `GITHUB_ACTIONS_SETUP.md` para instruções detalhadas.
 
 ## 📁 Estrutura de Arquivos
 

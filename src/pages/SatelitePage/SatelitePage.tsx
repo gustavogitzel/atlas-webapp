@@ -46,6 +46,10 @@ export const SatelitePage = () => {
   const FOLLOW_RADIUS = 220; // px
 
   const handleShowModal = (instrument: any, e?: React.MouseEvent) => {
+    if (activeInstrument && activeInstrument.id === instrument.id) {
+      setActiveInstrument(null);
+      return;
+    }
     setActiveInstrument(instrument);
     
     if (e && e.currentTarget) {
@@ -129,7 +133,7 @@ export const SatelitePage = () => {
             style={{ left: modalPos?.left, top: modalPos?.top }}
             onMouseEnter={() => {/* keep modal open while hovering */}}
             onMouseLeave={() => {/* nothing - modal stays until closed */}}
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => { setActiveInstrument(null); }}
           >
             <h2 className="modal-title">{activeInstrument.name}</h2>
             <p className="modal-body">{activeInstrument.description}</p>

@@ -100,23 +100,24 @@
 }
 
 .modal-card {
-  position: fixed;
-  width: 480px;
-  max-width: calc(100% - 32px);
-  min-height: 120px;
-  background: linear-gradient(180deg, #0f1724, #091022);
-  border: 1px solid rgba(45,212,191,0.08);
-  padding: 18px;
-  border-radius: 12px;
-  box-shadow: 0 12px 48px rgba(2,8,23,0.6);
-  color: #e6eefb;
-  transform: translateZ(0);
+    position: fixed;
+    width: 480px;
+    max-width: calc(100% - 32px);
+    min-height: 120px;
+    background: linear-gradient(180deg, #0f1724, #091022);
+    border: 1px solid rgba(45,212,191,0.08);
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: 0 12px 48px rgba(2,8,23,0.6);
+    color: #e6eefb;
+    transform: translateZ(0);
+    cursor: default;
 }
 
 .modal-title {
-  font-size: 18px;
-  color: #2dd4bf;
-  margin: 0 0 8px 0;
+    font-size: 18px;
+    color: #2dd4bf;
+    margin: 0 0 8px 0;
 }
 
 .modal-body {

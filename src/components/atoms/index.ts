@@ -9,3 +9,5 @@ export * from './SplitText';
 export * from './StatCard';
 export * from './IconButton';
 export * from './ScrollButton';
+export * from './MediaCard';
+export * from './ActionButton';

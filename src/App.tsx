@@ -1,12 +1,12 @@
-import { HomePage } from './pages/HomePage';
+import { AppRouter } from './routes';
 
 /**
  * App Component
- * Componente raiz da aplicação
+ * Componente raiz da aplicação com roteamento
  */
 
 function App() {
-  return <HomePage />;
+  return <AppRouter />;
 }
 
 export default App;

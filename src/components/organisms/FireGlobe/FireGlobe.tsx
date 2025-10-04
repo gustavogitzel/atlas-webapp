@@ -16,7 +16,6 @@ import { FIRE_GLOBE_CONFIG, getPointColor, getPointAltitude, getPointRadius } fr
 import { REGION_OPTIONS } from '@/data/amazonRegion';
 import { createFireGlobeTour } from '@/data/fireGlobeTour';
 import satelliteImage from '@/assets/images/satellite.png';
-import earthImage from '@/assets/images/earth.jpg';
 import type { FireFeature, FireDetailsResponse } from '@/types/fire';
 
 /**
@@ -91,6 +90,32 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
 
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Get GIBS imagery for the current date with validation
+  const currentGIBSDate = useMemo(() => {
+    const dateStr = uniqueDates[currentDateIndex] || new Date().toISOString().split('T')[0];
+    const date = new Date(dateStr);
+    const now = new Date();
+    
+    // Ensure date is not in the future and not before MODIS Terra start date (2000-02-24)
+    if (date > now) {
+      return now.toISOString().split('T')[0];
+    }
+    
+    const minDate = new Date('2020-02-24');
+    if (date < minDate) {
+      return minDate.toISOString().split('T')[0];
+    }
+    
+    return dateStr;
+  }, [uniqueDates, currentDateIndex]);
+
+  // Generate GIBS globe image URL for the current date
+  const gibsGlobeUrl = useMemo(() => {
+    // Use GIBS WMTS service with proper parameters for equirectangular projection
+    // Using epsg4326 (Geographic) projection and a single tile at zoom level 0 for full Earth view
+    return `https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${currentGIBSDate}/250m/0/0/0.jpg`;
+  }, [currentGIBSDate]);
+
   // Create tour steps with state setters
   const tourSteps = useMemo(
     () => createFireGlobeTour(setIsStatsCollapsed, setIsRegionCollapsed, setIsTimelineCollapsed, setHighlightedPointIndex),
@@ -99,13 +124,10 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
 
   // Auto-start tour on first load
   useEffect(() => {
-    const tourCompleted = localStorage.getItem('fireGlobeTourCompleted');
-    if (!tourCompleted) {
-      // Small delay to ensure everything is loaded
-      setTimeout(() => {
-        setShowTour(true);
-      }, 1000);
-    }
+    // Small delay to ensure everything is loaded
+    setTimeout(() => {
+      setShowTour(true);
+    }, 1000);
   }, []);
 
   useEffect(() => {
@@ -457,7 +479,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
       {/* Globe */}
       <div className="globe-container w-full h-full">
         <Globe
-          globeImageUrl={earthImage}
+          globeImageUrl={gibsGlobeUrl}
           backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
           polygonsData={selectedRegionPolygon}
           polygonGeoJsonGeometry="geometry"
@@ -639,7 +661,6 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         onClose={() => setShowTour(false)}
         characterImage={satelliteImage}
         onComplete={() => {
-          localStorage.setItem('fireGlobeTourCompleted', 'true');
           setShowTour(false);
         }}
       />

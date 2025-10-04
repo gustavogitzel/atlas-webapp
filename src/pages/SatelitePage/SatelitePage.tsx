@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import sat from "../../assets/sat.png";
 import Sat from "../../components/sat/Sat";
 import './SatelitePage.css';
+import backgroundHome from "../../assets/images/background_home.jpg"
 
 // Data for Terra's five main instruments
 const instruments = [
@@ -39,111 +40,31 @@ const instruments = [
 
 // The main component for the page
 export const SatelitePage = () => {
-  const [activeInstrument, setActiveInstrument] = useState<any>(null);
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
-  const hotspotCenter = useRef<{ x: number; y: number } | null>(null);
-
-  const FOLLOW_RADIUS = 220; // px
-
-  const handleShowModal = (instrument: any, e?: React.MouseEvent) => {
-    if (activeInstrument && activeInstrument.id === instrument.id) {
-      setActiveInstrument(null);
-      return;
-    }
-    setActiveInstrument(instrument);
-    
-    if (e && e.currentTarget) {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      hotspotCenter.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-    }
+  const backgroundStyle = {
+    backgroundImage: `linear-gradient(to bottom right, rgba(0, 0, 128, 0.5), rgba(0, 0, 128, 0.3)), url(${backgroundHome})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
   };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    setMouse({ x: e.clientX, y: e.clientY });
-  };
-
-  const computeModalPos = () => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const modalW = 480;
-    const modalH = 180;
-
-    // base centered position
-    const centerLeft = Math.max((vw - modalW) / 2, 12);
-    const centerTop = Math.max((vh - modalH) / 2, 12);
-
-    if (activeInstrument && hotspotCenter.current) {
-      const dx = mouse.x - hotspotCenter.current.x;
-      const dy = mouse.y - hotspotCenter.current.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      // only follow if mouse is reasonably close to the hotspot
-      if (dist <= FOLLOW_RADIUS) {
-        const MAX_OFFSET = 10; // px maximum shift from center
-        // proportional scale based on distance (closer -> smaller proportion but still limited)
-        const t = Math.min(dist / FOLLOW_RADIUS, 1);
-        const scale = t * MAX_OFFSET;
-        // direction from hotspot to mouse
-        const nx = dist === 0 ? 0 : dx / dist;
-        const ny = dist === 0 ? 0 : dy / dist;
-        const ox = nx * scale;
-        const oy = ny * scale;
-
-        const left = Math.min(Math.max(centerLeft + ox, 12), vw - modalW - 12);
-        const top = Math.min(Math.max(centerTop + oy, 12), vh - modalH - 12);
-        return { left, top };
-      }
-    }
-
-    return { left: centerLeft, top: centerTop };
-  };
-
-  const modalPos = activeInstrument ? computeModalPos() : null;
 
   return (
-    <div className="satelite-page" onMouseMove={handleMouseMove}>
-      <div className="page-title">
-        <h1>NASA's Terra Satellite</h1>
-        <p>Click the glowing hotspots to learn about the instruments.</p>
+    <div style={backgroundStyle}>
+      <div className="sketchfab-embed-wrapper">
+        <iframe
+          title="NASA EOS AM-1—Terra Satellite"
+          
+          allowFullScreen
+          allow="autoplay; fullscreen; xr-spatial-tracking"
+          xr-spatial-tracking
+          execution-while-out-of-viewport
+          execution-while-not-rendered
+          web-share
+          src="https://sketchfab.com/models/0d9ed6443b0f41c2b08671ac12019859/embed?autostart=1&camera=0&transparent=1&ui_animations=0&ui_infos=0&ui_stop=0&ui_inspector=0&ui_watermark_link=0&ui_watermark=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=0&ui_theme=dark"
+          className='sketchfab-iframe'
+          id='sketchfab-iframe'
+        >
+        </iframe>
       </div>
 
-      <div className="sat-wrapper">
-        <div className="sat-area">
-          <img src={sat} alt="Terra Satellite" className="satelite-image" />
-
-          {instruments.map((instrument) => (
-            <div
-              key={instrument.id}
-              className="hotspot"
-              style={{ top: instrument.position.top, left: instrument.position.left }}
-              onClick={(e) => handleShowModal(instrument, e)}
-            >
-              <div className="hotspot-dot">
-                <div className="hotspot-core" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {activeInstrument && (
-        <div className="overlay" onClick={() => { setActiveInstrument(null); }}>
-          <div
-            className="modal-card"
-            style={{ left: modalPos?.left, top: modalPos?.top }}
-            onMouseEnter={() => {/* keep modal open while hovering */}}
-            onMouseLeave={() => {/* nothing - modal stays until closed */}}
-            onClick={() => { setActiveInstrument(null); }}
-          >
-            <h2 className="modal-title">{activeInstrument.name}</h2>
-            <p className="modal-body">{activeInstrument.description}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="sat-widget">
-        <Sat text="Select a bubble and explore TERRA's instruments!" avatarSize={150} />
-      </div>
     </div>
   );
 };

@@ -1,12 +1,20 @@
 import { useEffect } from 'react';
 
-export const useSnapScroll = () => {
+interface UseSnapScrollOptions {
+  preventScroll?: boolean;
+}
+
+export const useSnapScroll = (options: UseSnapScrollOptions = {}) => {
   useEffect(() => {
     let lastScrollTop = 0;
     let isScrolling = false;
     let scrollTimeout: NodeJS.Timeout;
     const threshold = 50; // Reduzido para maior sensibilidade
     const animationDuration = 1200; // Duração aumentada para scroll mais suave
+    
+    if (options.preventScroll) {
+      document.body.style.overflow = 'hidden';
+    }
 
     const handleScroll = () => {
       if (isScrolling) return;
@@ -46,6 +54,12 @@ export const useSnapScroll = () => {
     };
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (options.preventScroll) {
+        document.body.style.overflow = 'auto';
+      }
+    };
+  }, [options.preventScroll]);
 };

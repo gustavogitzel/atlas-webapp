@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SplitText } from '@atoms/SplitText';
 import { ScrollButton } from '@atoms/ScrollButton';
 import { useSnapScroll, useIntersectionObserver } from '@/hooks';
@@ -10,16 +11,21 @@ import backgroundHome from '../../assets/images/background_home.jpg';
  */
 
 export const HomePage = () => {
+  const navigate = useNavigate();
   const adventureSectionRef = useRef<HTMLDivElement>(null);
 
-  // Ativa o scroll snap
-  useSnapScroll();
+  // Ativa o scroll snap e bloqueia o scroll livre
+  useSnapScroll({ preventScroll: true });
   
   // Detecta quando a seção de aventura está visível
   const isAdventureSectionVisible = useIntersectionObserver(adventureSectionRef, 0.6);
 
   const scrollToAdventure = () => {
     adventureSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -69,6 +75,25 @@ export const HomePage = () => {
         }}
         className="min-h-screen relative flex items-center justify-center overflow-hidden snap-start"
       >
+        <button
+          onClick={scrollToTop}
+          className="absolute top-8 left-1/2 -translate-x-1/2 group bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full p-3 transition-all duration-300 z-10"
+          aria-label="Voltar ao topo"
+        >
+          <svg
+            className="w-5 h-5 text-white transition-transform duration-300 group-hover:-translate-y-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </button>
         <div className="text-center max-w-7xl mx-auto px-4">
           <div 
             className={`transform transition-all duration-1000 ${
@@ -126,24 +151,24 @@ export const HomePage = () => {
           }}
         >
           <button
-            className="group bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full py-4 px-8 transition-all duration-300 flex items-center gap-2"
-            onClick={() => window.open('2024.spaceappschallenge.org/', '_blank')}
-          >
-            <span className="text-white font-spartan font-bold tracking-wider">LET'S GO</span>
-            <svg 
-              className="w-5 h-5 text-white transition-transform duration-300 group-hover:translate-x-1" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
+              className="group bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full py-4 px-8 transition-all duration-300 flex items-center gap-2"
+              onClick={() => navigate('/satellite')}
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" 
-              />
-            </svg>
-          </button>
+              <span className="text-white font-spartan font-bold tracking-wider">LET'S GO</span>
+              <svg 
+                className="w-5 h-5 text-white transition-transform duration-300 group-hover:translate-x-1" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" 
+                />
+              </svg>
+            </button>
         </div>
       </div>
     </div>

@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "./styles/globals.css";
+
 /* Custom Scrollbar */
 @layer utilities {
   .scrollbar-thin::-webkit-scrollbar {

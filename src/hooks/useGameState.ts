@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { TreePlantingGameState, BrazilRegion } from '@/types/nasa.types';
 
+// Type for timer ref
+type TimerRef = ReturnType<typeof setInterval> | null;
+
 /**
  * Hook para gerenciar estado do mini-jogo de reflorestamento
  */
@@ -41,7 +44,7 @@ export const useTreePlantingGame = ({
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
-  const timerRef = useRef<number | null>(null);
+  const timerRef = useRef<TimerRef>(null);
 
   // Constantes para cálculos
   const CO2_PER_TREE = 21.77; // kg CO2 por árvore/ano

@@ -1,5 +1,8 @@
+const { fontFamily } = require("tailwindcss/defaultTheme")
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ["class"],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -9,6 +12,7 @@ export default {
       colors: {
         // NASA Terra colors
         'terra-blue': '#3b82f6',
+        'white': '#fff',
         'terra-green': '#10b981',
         'terra-orange': '#f59e0b',
         'terra-red': '#ef4444',
@@ -31,6 +35,7 @@ export default {
         'slide-up': 'slideUp 0.5s ease-in-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'spin-slow': 'spin 3s linear infinite',
+        'bounce-slow': 'bounce 2s infinite',
       },
       keyframes: {
         fadeIn: {
@@ -45,7 +50,19 @@ export default {
       backdropBlur: {
         xs: '2px',
       },
+      container: {
+        center: true,
+        padding: "2rem",
+        screens: {
+          "2xl": "1400px",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 }

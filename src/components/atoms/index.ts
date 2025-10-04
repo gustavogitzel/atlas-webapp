@@ -8,3 +8,4 @@ export * from './Badge';
 export * from './SplitText';
 export * from './StatCard';
 export * from './IconButton';
+export * from './ScrollButton';

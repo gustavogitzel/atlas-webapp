@@ -1,4 +1,4 @@
-import { FireGlobePage } from './pages/FireGlobePage';
+import { HomePage } from './pages/HomePage';
 
 /**
  * App Component
@@ -6,7 +6,7 @@ import { FireGlobePage } from './pages/FireGlobePage';
  */
 
 function App() {
-  return <FireGlobePage />;
+  return <HomePage />;
 }
 
 export default App;

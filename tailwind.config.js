@@ -14,10 +14,17 @@ export default {
         'terra-red': '#ef4444',
         'terra-purple': '#8b5cf6',
         'terra-indigo': '#6366f1',
+        'dark-blue': '#0B1840',
+        'navy': '#0A005A',
+        'purple': '5833A6',
+        'black': '#222222',
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'sans-serif'],
-        mono: ['Courier New', 'Courier', 'monospace'],
+        sans: ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'sans-serif'],
+        display: ['League Spartan', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'Courier New', 'monospace'],
+        poppins: ['Poppins', 'sans-serif'],
+        spartan: ['League Spartan', 'sans-serif']
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

@@ -1,5 +1,6 @@
-import { Card } from '@atoms/Card';
+import { SplitText } from '@atoms/SplitText';
 
+import backgroundHome from '../../assets/images/background_home.jpg';
 /**
  * HomePage - Página principal com Tailwind
  * Storytelling: Terra como "médico" examinando a saúde do planeta
@@ -8,55 +9,38 @@ import { Card } from '@atoms/Card';
 export const HomePage = () => {
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-700">
-      {/* Header */}
-      <header className="bg-white/10 backdrop-blur-md border-b border-white/20 px-4 py-8">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-5xl font-extrabold text-white mb-2 drop-shadow-lg">
-            ATLAS
-          </h1>
-          <p className="text-xl text-white/90">
-            Assessment of Terra's Legacy & Atmospheric Signs
-          </p>
-        </div>
-      </header>
+    <div 
+      style={{ 
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(${backgroundHome})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }} 
+      className="min-h-screen relative"
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[navy]/50 via-[navy]-900/50 to-[navy]-800/50"></div>
+      
+      {/* Content */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center">
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 pb-16">
-          <div className="animate-fade-in">
-            <Card variant="elevated" padding="lg">
-              <div className="text-center mb-12 pb-8 border-b-2 border-gray-200">
-                <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
-                  🩺 Terra: O Médico do Planeta
-                </h2>
-                <p className="text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto">
-                  Há 25 anos, o satélite Terra da NASA realiza o check-up mais importante
-                  da história: examinar a saúde do nosso planeta.
-                </p>
-              </div>
-
-              <div className="space-y-8">
-                <section>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-4">🚀 A Missão</h3>
-                  <p className="text-lg text-gray-600 leading-relaxed">
-                    Lançado em 18 de dezembro de 1999, o satélite Terra é como um médico
-                    espacial equipado com 5 instrumentos de última geração. Cada um deles
-                    examina um aspecto vital da saúde da Terra.
-                  </p>
-                </section>
-              </div>
-            </Card>
-          </div>ß
+      <main className="w-full">
+        <div className="animate-fade-in mx-auto max-w-3xl px-4">
+          <div className="text-center space-y-6">
+            <h1 className="font-display font-[spartan] tracking-[1rem] text-7xl font-bold text-white drop-shadow-lg tracking-tight">
+              <SplitText delay={0.2} stagger={0.08}>
+                ATLAS
+              </SplitText>
+            </h1>
+            <p className="font-display font-[poppins] text-xl text-white/95 font-light tracking-wide max-w-2xl mx-auto">
+              <SplitText delay={1.2} stagger={0.02} duration={0.4}>
+                Assessment of Terra's Legacy & Atmospheric Signs
+              </SplitText>
+            </p>
+          </div>
+        </div>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-black/20 backdrop-blur-md px-4 py-8 text-center text-white/80 text-sm">
-        <p>
-          🛰️ Dados do Satélite Terra da NASA | 
-          NASA Space Apps Challenge 2024 | 
-          25 Anos Monitorando a Terra
-        </p>
-      </footer>
+      </div>
     </div>
   );
 };

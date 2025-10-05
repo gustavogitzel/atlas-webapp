@@ -33,9 +33,9 @@ const MEDIA_ITEMS: MediaItem[] = [
 ];
 
 export const HomePage = () => {
+  const navigate = useNavigate();
   const adventureSectionRef = useRef<HTMLDivElement>(null);
   const heroSectionRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   
   // Preload fire data and images in background
   const { data: fireData } = useFirePoints({ maxPoints: 10000, minConfidence: 0 });
@@ -121,7 +121,7 @@ export const HomePage = () => {
   };
 
   const goToFireGlobe = () => {
-    navigate('/fire-globe');
+    navigate('/satellite');
   };
 
   return (

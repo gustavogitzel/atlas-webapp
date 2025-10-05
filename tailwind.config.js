@@ -10,6 +10,18 @@ export default {
   theme: {
     extend: {
       colors: {
+        // NASA Terra colors
+        'terra-blue': '#3b82f6',
+        'white': '#fff',
+        'terra-green': '#10b981',
+        'terra-orange': '#f59e0b',
+        'terra-red': '#ef4444',
+        'terra-purple': '#8b5cf6',
+        'terra-indigo': '#6366f1',
+        'dark-blue': '#0B1840',
+        'navy': '#0A005A',
+        'purple': '#5833A6',
+        'black': '#222222',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

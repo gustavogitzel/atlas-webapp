@@ -548,27 +548,29 @@ export const SatellitePage = () => {
 
         {/* Step Indicator */}
         {showTour && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fixed top-8 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-4 py-2"
-          >
-            {tourSteps.map((_, index) => (
-              <div
-                key={index}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentTourStep
-                    ? 'w-8 bg-blue-500'
-                    : index < currentTourStep
-                    ? 'w-2 bg-blue-500/50'
-                    : 'w-2 bg-gray-600'
-                }`}
-              />
-            ))}
-            <span className="text-xs text-white ml-2 font-poppins">
-              {currentTourStep + 1}/{tourSteps.length}
-            </span>
-          </motion.div>
+          <div className="fixed top-8 left-0 right-0 flex justify-center z-[10001]">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-4 py-2"
+            >
+              {tourSteps.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    index === currentTourStep
+                      ? 'w-8 bg-blue-500'
+                      : index < currentTourStep
+                      ? 'w-2 bg-blue-500/50'
+                      : 'w-2 bg-gray-600'
+                  }`}
+                />
+              ))}
+              <span className="text-xs text-white ml-2 font-poppins">
+                {currentTourStep + 1}/{tourSteps.length}
+              </span>
+            </motion.div>
+          </div>
         )}
 
         {/* Debug Mode Controls */}

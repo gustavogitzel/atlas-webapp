@@ -214,11 +214,11 @@ export const HomePage = ({ onStartExperience }: HomePageProps) => {
 
         {/* Let's Go Button */}
         <div 
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 transform transition-all duration-1000"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 transition-all duration-1000"
           style={{ 
             transitionDelay: '1200ms',
             opacity: isAdventureSectionVisible ? 1 : 0,
-            transform: isAdventureSectionVisible ? 'translate(-50%, 0)' : 'translate(-50%, 20px)'
+            transform: isAdventureSectionVisible ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(20px)'
           }}
         >
           <button

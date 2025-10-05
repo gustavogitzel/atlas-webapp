@@ -23,6 +23,8 @@ export interface TourStep {
   interactionTarget?: string; // Selector for interaction element
   action?: () => void; // Optional action to perform when step is shown
   onNext?: () => void; // Optional action before going to next step
+  autoProgress?: boolean; // Automatically progress to next step after duration
+  progressDuration?: number; // Duration in ms before auto-progressing (default 3000)
 }
 
 export interface GuidedTourProps {
@@ -81,6 +83,18 @@ export const GuidedTour = ({
       }
     }
   }, [step, currentStep]);
+
+  // Auto-progress timer
+  useEffect(() => {
+    if (!isOpen || !step.autoProgress) return;
+
+    const duration = step.progressDuration || 3000;
+    const timer = setTimeout(() => {
+      handleNext();
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, step, currentStep]);
 
   const handleNext = () => {
     // Check if interaction is required and not completed
@@ -141,20 +155,65 @@ export const GuidedTour = ({
           </AnimatePresence>
 
 
-          {/* Character with speech - Always at bottom */}
+          {/* Character with speech and navigation - Always at bottom */}
           <motion.div
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
+            className="fixed left-8 bottom-8 z-[10001] flex items-end gap-4"
           >
-            <GuideCharacter
-              imageUrl={characterImage}
-              message={step.description}
-              isActive
-              showMessage
-              avatarSize="lg"
-            />
+            <div className="pointer-events-none">
+              <GuideCharacter
+                imageUrl={characterImage}
+                message={step.description}
+                isActive
+                showMessage
+                avatarSize="lg"
+              />
+            </div>
+            
+            {/* Navigation arrows - Next to character speech bubble (hidden during required interaction) */}
+            {!(step.requiresInteraction && !interactionCompleted) && (
+              <div className="flex flex-row gap-3 mb-12 pointer-events-auto">
+            {/* Previous button */}
+            <button
+              onClick={handlePrev}
+              disabled={isFirstStep}
+              className={cn(
+                'p-4 rounded-full backdrop-blur-md border transition-all',
+                isFirstStep
+                  ? 'bg-gray-800/50 border-gray-700 text-gray-600 cursor-not-allowed'
+                  : 'bg-black/80 border-white/20 text-white hover:bg-white/10 hover:scale-110'
+              )}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+
+            {/* Next button or custom action button */}
+            {isLastStep && step.id === 'next-story' ? (
+              <button
+                onClick={() => window.location.href = '/flood-globe'}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-lg border border-blue-400 text-white font-semibold transition-all hover:scale-105 shadow-lg shadow-blue-500/50 flex items-center gap-2"
+              >
+                <span>View Flood Story</span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            ) : (
+              <button
+                onClick={handleNext}
+                disabled={step.requiresInteraction && !interactionCompleted}
+                className={cn(
+                  'p-4 rounded-full backdrop-blur-md border transition-all',
+                  step.requiresInteraction && !interactionCompleted
+                    ? 'bg-gray-800/50 border-gray-700 text-gray-600 cursor-not-allowed'
+                    : 'bg-blue-500 border-blue-400 text-white hover:bg-blue-600 hover:scale-110 shadow-lg shadow-blue-500/50'
+                )}
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
+              </div>
+            )}
           </motion.div>
 
           {/* Close button - Top right */}
@@ -199,44 +258,6 @@ export const GuidedTour = ({
               {currentStep + 1}/{steps.length}
             </span>
           </motion.div>
-
-          {/* Navigation arrows - Fixed right side (hidden during required interaction) */}
-          {!(step.requiresInteraction && !interactionCompleted) && (
-            <motion.div
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 100 }}
-              className="fixed right-8 top-1/2 transform -translate-y-1/2 z-[10001] flex flex-col gap-4 pointer-events-auto"
-            >
-            {/* Previous button */}
-            <button
-              onClick={handlePrev}
-              disabled={isFirstStep}
-              className={cn(
-                'p-4 rounded-full backdrop-blur-md border transition-all',
-                isFirstStep
-                  ? 'bg-gray-800/50 border-gray-700 text-gray-600 cursor-not-allowed'
-                  : 'bg-black/80 border-white/20 text-white hover:bg-white/10 hover:scale-110'
-              )}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-
-            {/* Next button */}
-            <button
-              onClick={handleNext}
-              disabled={step.requiresInteraction && !interactionCompleted}
-              className={cn(
-                'p-4 rounded-full backdrop-blur-md border transition-all',
-                step.requiresInteraction && !interactionCompleted
-                  ? 'bg-gray-800/50 border-gray-700 text-gray-600 cursor-not-allowed'
-                  : 'bg-blue-500 border-blue-400 text-white hover:bg-blue-600 hover:scale-110 shadow-lg shadow-blue-500/50'
-              )}
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-            </motion.div>
-          )}
         </>
       )}
     </AnimatePresence>

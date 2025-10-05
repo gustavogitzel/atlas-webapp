@@ -14,6 +14,7 @@ export interface GlobeLayer {
   resolution: string;
   category: 'visual' | 'infrared' | 'terrain' | 'environmental';
   icon: string;
+  serviceType?: 'wms' | 'wmts'; // Service type (default: wms)
 }
 
 /**
@@ -29,6 +30,17 @@ export const GLOBE_LAYERS: GlobeLayer[] = [
     resolution: 'static',
     category: 'visual',
     icon: '🌑',
+  },
+
+  // Blue Marble - Static high-resolution Earth imagery
+  {
+    id: 'blue-marble',
+    name: 'Blue Marble',
+    description: 'High-resolution composite image of Earth - static, does not vary with time',
+    baseUrl: 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&layers=BlueMarble_NextGeneration&version=1.3.0&crs=EPSG:4326&transparent=false&width=2048&height=1024&bbox=-90,-180,90,180&format=image/jpeg',
+    resolution: '500m',
+    category: 'visual',
+    icon: '🌐',
   },
 
   // Visual Spectrum Layers - Terra only
@@ -56,9 +68,21 @@ export const GLOBE_LAYERS: GlobeLayer[] = [
 
 /**
  * Get layer URL for a specific date
- * Uses WMS service which provides full coverage without black bars
+ * Supports both WMS and WMTS services
  */
 export const getLayerUrl = (layer: GlobeLayer, date: string, zoomLevel: number = 1): string => {
+  // Handle WMTS layers (tile-based)
+  if (layer.serviceType === 'wmts') {
+    // For WMTS, we use zoom level 0 for global view (single tile)
+    // Replace placeholders in the URL template
+    return layer.baseUrl
+      .replace('{date}', date)
+      .replace('{z}', '0')  // Zoom level 0 = global view
+      .replace('{y}', '0')  // Tile Y coordinate
+      .replace('{x}', '0'); // Tile X coordinate
+  }
+  
+  // Handle WMS layers (image-based)
   // Calculate resolution based on zoom level
   // Base: 2048x1024, increases with zoom
   const baseWidth = 2048;
@@ -73,8 +97,13 @@ export const getLayerUrl = (layer: GlobeLayer, date: string, zoomLevel: number =
   let url = layer.baseUrl.replace(/width=\d+/, `width=${width}`);
   url = url.replace(/height=\d+/, `height=${height}`);
   
-  // Add time parameter
-  return `${url}&time=${date}`;
+  // Add time parameter only if layer is not static
+  // Static layers (like Blue Marble) don't need time parameter
+  if (layer.resolution !== 'static') {
+    return `${url}&time=${date}`;
+  }
+  
+  return url;
 };
 
 /**
@@ -126,6 +155,35 @@ export const FIRE_DETECTION_LAYERS = [
   'terra-bands721',
   'terra-truecolor',
 ];
+
+/**
+ * Get CO overlay URL for a specific date
+ * CO (Carbon Monoxide) layer from MOPITT instrument
+ */
+export const getCOLayerUrl = (date: string, zoomLevel: number = 1): string => {
+  const baseWidth = 2048;
+  const baseHeight = 1024;
+  
+  const scale = Math.min(zoomLevel, 4);
+  const width = Math.floor(baseWidth * scale);
+  const height = Math.floor(baseHeight * scale);
+  
+  const params = new URLSearchParams({
+    SERVICE: 'WMS',
+    REQUEST: 'GetMap',
+    layers: 'MOPITT_CO_Monthly_Surface_Mixing_Ratio_Day',
+    version: '1.3.0',
+    crs: 'EPSG:4326',
+    transparent: 'true',
+    width: width.toString(),
+    height: height.toString(),
+    bbox: '-90,-180,90,180',
+    format: 'image/png',
+    time: date
+  });
+  
+  return `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?${params.toString()}`;
+};
 
 /**
  * Layer categories for UI organization

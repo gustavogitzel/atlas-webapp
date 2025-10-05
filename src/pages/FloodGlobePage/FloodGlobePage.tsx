@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import Globe from 'react-globe.gl';
-import { HelpCircle, Layers, Info } from 'lucide-react';
+import { HelpCircle, Layers, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { IconButton } from '@atoms/IconButton';
 import { LoadingScreen } from '@molecules/LoadingScreen';
 import { TimelineControls } from '@molecules/TimelineControls';
@@ -11,7 +11,7 @@ import satelliteImage from '@/assets/images/satellite.png';
 
 /**
  * FloodGlobePage - Visualização de enchentes no Brasil
- * Período: 17-APR-2024 até 15-MAY-2024
+ * Período: 19-APR-2024 até 15-MAY-2024
  */
 
 interface LayerOption {
@@ -21,6 +21,47 @@ interface LayerOption {
   url: string;
   icon: string;
 }
+
+interface BaseLayerOption {
+  id: string;
+  name: string;
+  description: string;
+  isStatic: boolean; // Does not change with time
+  availableDates?: string[]; // Specific dates when available (if not static)
+  icon: string;
+}
+
+const BASE_LAYERS: BaseLayerOption[] = [
+  {
+    id: 'grey-continents',
+    name: 'Grey Oceans / Black Continents',
+    description: 'Static background - grey oceans and black continents',
+    isStatic: true,
+    icon: '🌑',
+  },
+  {
+    id: 'blue-marble-2004',
+    name: 'Blue Marble (August 2004)',
+    description: 'Static high-resolution Earth image from August 2004',
+    isStatic: true,
+    icon: '🌐',
+  },
+  {
+    id: 'terrain-relief',
+    name: 'Terrain Relief',
+    description: 'ASTER GDEM Color Shaded Relief - shows elevation',
+    isStatic: true,
+    icon: '🗻',
+  },
+  {
+    id: 'corrected-reflectance',
+    name: 'Corrected Reflectance (Bands 7-2-1)',
+    description: 'MODIS Terra infrared false color - available only on specific dates',
+    isStatic: false,
+    availableDates: ['2024-05-15', '2023-05-15'],
+    icon: '🔥',
+  },
+];
 
 const FLOOD_LAYERS: LayerOption[] = [
   {
@@ -36,6 +77,20 @@ const FLOOD_LAYERS: LayerOption[] = [
     description: 'MODIS Terra Cloud Optical Thickness - Measures cloud density',
     url: '', // URL generated dynamically based on zoom
     icon: '🌧️',
+  },
+  {
+    id: 'cloud-water-path',
+    name: 'Cloud Water Path',
+    description: 'MODIS Terra Cloud Water Path - Shows water content in clouds',
+    url: '', // URL generated dynamically based on zoom
+    icon: '💧',
+  },
+  {
+    id: 'flood-2day',
+    name: 'Flood Detection (2-Day)',
+    description: 'MODIS Combined Flood 2-Day Window - Shows detected flood areas (only available on 15-MAY-2024)',
+    url: '', // URL generated dynamically based on zoom
+    icon: '🌊',
   },
 ];
 
@@ -124,20 +179,25 @@ const FLOOD_INFO = {
 export const FloodGlobePage = () => {
   const globeRef = useRef<any>(null);
   const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
+  const [selectedBaseLayer, setSelectedBaseLayer] = useState('terrain-relief');
   const [showInfo, setShowInfo] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [globeTexture, setGlobeTexture] = useState(() => getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', 1, false, 'image/jpeg'));
   const [globeZoom, setGlobeZoom] = useState(1);
+  
+  // Collapsible states
+  const [isBaseLayerCollapsed, setIsBaseLayerCollapsed] = useState(true);
+  const [isOverlayCollapsed, setIsOverlayCollapsed] = useState(true);
   
   // Timeline state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
   const [currentDate, setCurrentDate] = useState('2024-05-01');
   
-  // Generate dates from April 17 to May 15, 2024
+  // Generate dates from April 19 to May 15, 2024
   const uniqueDates = useMemo(() => {
     const dates: string[] = [];
-    const startDate = new Date('2024-04-17');
+    const startDate = new Date('2024-04-19');
     const endDate = new Date('2024-05-15');
     
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
@@ -223,20 +283,45 @@ export const FloodGlobePage = () => {
     };
   }, [isPlaying, uniqueDates.length]);
 
-  // Compose globe texture with selected layers
+  // Compose globe texture with selected base layer and overlays
   useEffect(() => {
     const composeTexture = async () => {
       const startTime = performance.now();
       
-      // Generate base URL with current zoom and date
-      const baseUrl = getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', globeZoom, false, 'image/jpeg', currentDate);
+      // Get selected base layer
+      const baseLayer = BASE_LAYERS.find(l => l.id === selectedBaseLayer);
+      if (!baseLayer) return;
       
+      // Generate base URL based on selected base layer
+      let baseUrl: string;
+      
+      if (baseLayer.id === 'grey-continents') {
+        // Use earth-grey as placeholder (similar to FireGlobe)
+        baseUrl = '/src/assets/images/earth-grey.jpg';
+      } else if (baseLayer.id === 'blue-marble-2004') {
+        // Use Blue Marble from GIBS (static, no date needed)
+        baseUrl = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&layers=BlueMarble_NextGeneration&version=1.3.0&crs=EPSG:4326&transparent=false&width=2048&height=1024&bbox=-90,-180,90,180&format=image/jpeg';
+      } else if (baseLayer.id === 'terrain-relief') {
+        baseUrl = getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', globeZoom, false, 'image/jpeg', currentDate);
+      } else if (baseLayer.id === 'corrected-reflectance') {
+        // Check if current date is available
+        if (!baseLayer.availableDates?.includes(currentDate)) {
+          console.warn(`⚠️ Corrected Reflectance not available for ${currentDate}, using terrain relief`);
+          baseUrl = getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', globeZoom, false, 'image/jpeg', currentDate);
+        } else {
+          // Use WMS for Corrected Reflectance
+          baseUrl = getLayerUrl('MODIS_Terra_CorrectedReflectance_Bands721', globeZoom, false, 'image/jpeg', currentDate);
+        }
+      } else {
+        baseUrl = getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', globeZoom, false, 'image/jpeg', currentDate);
+      }
+      
+      console.log('🌍 Base Layer:', baseLayer.name);
       console.log('🌍 Base Layer URL:', baseUrl);
       console.log('📅 Date:', currentDate);
       console.log('🔍 Zoom Level:', globeZoom);
-      console.log('📐 Resolution:', `${Math.floor(2048 * globeZoom)}x${Math.floor(1024 * globeZoom)}`);
       
-      // If no layers selected, just use base
+      // If no overlay layers selected, just use base
       if (selectedLayers.length === 0) {
         setGlobeTexture(baseUrl);
         const endTime = performance.now();
@@ -245,7 +330,7 @@ export const FloodGlobePage = () => {
       }
       
       // Generate cache key for this combination
-      const cacheKey = `${currentDate}-${selectedLayers.sort().join('-')}-${globeZoom}`;
+      const cacheKey = `${selectedBaseLayer}-${currentDate}-${selectedLayers.sort().join('-')}-${globeZoom}`;
       
       // Check if already composed
       if (composedTextureCache.current.has(cacheKey)) {
@@ -278,13 +363,35 @@ export const FloodGlobePage = () => {
         for (const layerId of selectedLayers) {
           const layer = FLOOD_LAYERS.find(l => l.id === layerId);
           if (layer) {
-            // Generate layer URL with current zoom
-            const layerName = layerId === 'cloud-phase' 
-              ? 'MODIS_Terra_Cloud_Phase_Optical_Properties'
-              : 'MODIS_Terra_Cloud_Optical_Thickness';
-            const layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
+            // Skip flood-2day if not on 15-MAY-2024
+            if (layerId === 'flood-2day' && currentDate !== '2024-05-15') {
+              console.log('⚠️ Flood 2-Day layer only available on 2024-05-15, skipping...');
+              continue;
+            }
             
-            console.log(`☁️ Cloud Layer (${layer.name}):`, layerUrl);
+            // Generate layer URL with current zoom
+            let layerName: string;
+            let layerUrl: string;
+            
+            if (layerId === 'cloud-phase') {
+              layerName = 'MODIS_Terra_Cloud_Phase_Optical_Properties';
+              layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
+            } else if (layerId === 'cloud-thickness') {
+              layerName = 'MODIS_Terra_Cloud_Optical_Thickness';
+              layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
+            } else if (layerId === 'cloud-water-path') {
+              // WMS URL for Cloud Water Path
+              layerName = 'MODIS_Terra_Cloud_Water_Path';
+              layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
+            } else if (layerId === 'flood-2day') {
+              // WMS URL for Flood 2-Day (only on 15-MAY-2024)
+              layerName = 'MODIS_Combined_Flood_2-Day';
+              layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
+            } else {
+              continue;
+            }
+            
+            console.log(`🌊 Layer (${layer.name}):`, layerUrl);
             
             const layerImg = await loadImage(layerUrl);
             ctx.globalAlpha = 0.7; // Semi-transparent overlay
@@ -309,7 +416,7 @@ export const FloodGlobePage = () => {
     };
 
     composeTexture();
-  }, [selectedLayers, globeZoom, currentDate]);
+  }, [selectedBaseLayer, selectedLayers, globeZoom, currentDate]);
 
   // Pre-compose common combinations in background after loading
   useEffect(() => {
@@ -391,7 +498,16 @@ export const FloodGlobePage = () => {
     );
   };
 
-  const tourSteps = useMemo(() => createFloodGlobeTour(), []);
+  const tourSteps = useMemo(
+    () => createFloodGlobeTour(
+      setCurrentDateIndex,
+      setSelectedBaseLayer,
+      setSelectedLayers,
+      globeRef,
+      uniqueDates
+    ),
+    [uniqueDates]
+  );
 
   // Show loading screen while preloading images
   if (imagesLoading) {
@@ -452,31 +568,124 @@ export const FloodGlobePage = () => {
       )}
 
       {/* Layer Controls */}
-      <div className="absolute top-4 right-4 z-10 space-y-2">
-        <div className="bg-black/80 backdrop-blur-md border border-white/20 rounded-lg p-4">
-          <h3 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
-            <Layers className="h-4 w-4 text-blue-500" />
-            Cloud Layers
-          </h3>
-          
-          <div className="space-y-2">
-            {FLOOD_LAYERS.map(layer => (
-              <button
-                key={layer.id}
-                onClick={() => toggleLayer(layer.id)}
-                className={`w-full text-left p-3 rounded-lg border transition-all ${
-                  selectedLayers.includes(layer.id)
-                    ? 'bg-blue-500/20 border-blue-500 text-white'
-                    : 'bg-black/50 border-white/20 text-gray-300 hover:bg-white/10'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">{layer.icon}</span>
-                  <span className="text-sm font-semibold">{layer.name}</span>
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        {/* Base Layer Selection - Collapsible */}
+        <div className="w-auto md:w-64">
+          <div className="relative">
+            <button
+              onClick={() => setIsBaseLayerCollapsed(!isBaseLayerCollapsed)}
+              className="absolute -top-2 -right-2 z-20 p-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white"
+            >
+              {isBaseLayerCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            </button>
+            
+            {!isBaseLayerCollapsed ? (
+              <div className="bg-black/80 backdrop-blur-md border border-white/20 rounded-lg p-3 text-white max-h-[70vh] overflow-y-auto">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+                  <Layers className="h-4 w-4 text-green-400" />
+                  <span className="text-xs font-bold">Base Layer</span>
                 </div>
-                <p className="text-xs text-gray-400">{layer.description}</p>
-              </button>
-            ))}
+                
+                <div className="space-y-1">
+                  {BASE_LAYERS.map(layer => {
+                    const isAvailable = layer.isStatic || layer.availableDates?.includes(currentDate);
+                    const isSelected = selectedBaseLayer === layer.id;
+                    
+                    return (
+                      <button
+                        key={layer.id}
+                        onClick={() => {
+                          if (isAvailable) {
+                            setSelectedBaseLayer(layer.id);
+                            setIsBaseLayerCollapsed(true);
+                          }
+                        }}
+                        disabled={!isAvailable}
+                        className={`w-full p-2 rounded text-left transition-colors ${
+                          isSelected
+                            ? 'bg-green-500/30 border border-green-400/50'
+                            : isAvailable
+                            ? 'bg-white/5 hover:bg-white/10 border border-transparent'
+                            : 'bg-black/30 border border-transparent opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-sm mt-0.5">{layer.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold flex items-center gap-1">
+                              {layer.name}
+                              {isSelected && <span className="text-[8px] bg-green-500 px-1 py-0.5 rounded">ACTIVE</span>}
+                              {!isAvailable && <span className="text-[8px] text-red-400">(N/A)</span>}
+                            </div>
+                            <div className="text-[10px] text-white/60 line-clamp-2">{layer.description}</div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-lg p-2 text-white text-xs font-bold flex items-center gap-2">
+                <Layers className="h-3 w-3 text-green-400" />
+                Base Layer
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Overlay Layers - Collapsible */}
+        <div className="w-auto md:w-64">
+          <div className="relative">
+            <button
+              onClick={() => setIsOverlayCollapsed(!isOverlayCollapsed)}
+              className="absolute -top-2 -right-2 z-20 p-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white"
+            >
+              {isOverlayCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            </button>
+            
+            {!isOverlayCollapsed ? (
+              <div className="bg-black/80 backdrop-blur-md border border-white/20 rounded-lg p-3 text-white max-h-[70vh] overflow-y-auto">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+                  <Layers className="h-4 w-4 text-blue-400" />
+                  <span className="text-xs font-bold">Overlay Layers</span>
+                </div>
+                
+                <div className="space-y-1">
+                  {FLOOD_LAYERS.map(layer => {
+                    const isSelected = selectedLayers.includes(layer.id);
+                    
+                    return (
+                      <button
+                        key={layer.id}
+                        onClick={() => toggleLayer(layer.id)}
+                        className={`w-full p-2 rounded text-left transition-colors ${
+                          isSelected
+                            ? 'bg-blue-500/30 border border-blue-400/50'
+                            : 'bg-white/5 hover:bg-white/10 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-sm mt-0.5">{layer.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold flex items-center gap-1">
+                              {layer.name}
+                              {isSelected && <span className="text-[8px] bg-blue-500 px-1 py-0.5 rounded">ON</span>}
+                            </div>
+                            <div className="text-[10px] text-white/60 line-clamp-2">{layer.description}</div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-lg p-2 text-white text-xs font-bold flex items-center gap-2">
+                <Layers className="h-3 w-3 text-blue-400" />
+                Overlays
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GuideCharacter } from '@molecules/GuideCharacter';
 import backgroundHome from "../../assets/images/background_home.jpg";
@@ -29,27 +29,27 @@ const tourSteps = [
   },
   {
     id: 'aster',
-    message:  "This is ASTER, my 3D scanner. It maps the shape and temperature of the land." ,
+    message:  "This is ASTER, my zoom lens and 3D scanner, mapping the land's shape and heat." ,
     instrumentId: 'ASTER',
   },
   {
     id: 'misr',
-    message:  "MISR uses nine cameras to see through haze and understand the air we breathe." ,
+    message:  "Meet MISR, my depth perception. It uses nine views to see the air in 3D." ,
     instrumentId: 'MISR',
   },
   {
     id: 'mopitt',
-    message:  "Meet MOPITT, my 'super-sniffer.' It detects invisible pollution." ,
+    message:  "MOPITT is my 'super-sniffer,' tracking invisible air pollution.",
     instrumentId: 'MOPITT',
   },
   {
     id: 'ceres',
-    message:  "And CERES, my energy meter. It checks Earth's temperature, like a planetary thermometer.",
+    message:  "And CERES, my planetary thermometer, checking Earth's energy balance.",
     instrumentId: 'CERES',
   },
   {
     id: 'conclusion',
-    message: 'Great job! You\'ve learned about all of Terra\'s instruments. Feel free to explore on your own by clicking the glowing points. Have fun discovering more!',
+    message: 'Now you have met my senses. You are free to explore. Take a moment to see me for yourself—hold and drag to get a closer look.',
   },
 ];
 
@@ -214,19 +214,46 @@ export const SatellitePage = () => {
             const mouseY = event.clientY || 0;
             
             if (debugMode) {
-              // Capturar coordenadas 3D do ponto onde o mouse está
-              if (event.position3D && event.position3D.length === 3) {
-                const coords: [number, number, number] = [
-                  parseFloat(event.position3D[0].toFixed(3)),
-                  parseFloat(event.position3D[1].toFixed(3)),
-                  parseFloat(event.position3D[2].toFixed(3))
-                ];
-                setMousePosition({ x: mouseX, y: mouseY, coords3D: coords });
-              } else {
-                setMousePosition({ x: mouseX, y: mouseY, coords3D: null });
+              console.log('🖱️ Mouse Event:', { mouseX, mouseY, has3D: !!event.position3D });
+            }
+            
+            // Capturar coordenadas 3D do ponto onde o mouse está
+            if (event.position3D && event.position3D.length === 3) {
+              const coords3D: [number, number, number] = [
+                parseFloat(event.position3D[0].toFixed(3)),
+                parseFloat(event.position3D[1].toFixed(3)),
+                parseFloat(event.position3D[2].toFixed(3))
+              ];
+              
+              if (debugMode) {
+                console.log('🎯 3D Coords found:', coords3D);
               }
+              
+              // Converter 3D para 2D (coordenadas de tela em %)
+              api.getWorldToScreenCoordinates(coords3D, (err: any, pos2D: any) => {
+                if (!err && pos2D && iframeRef.current) {
+                  const rect = iframeRef.current.getBoundingClientRect();
+                  const screenX = parseFloat(((pos2D[0] / rect.width) * 100).toFixed(2));
+                  const screenY = parseFloat(((pos2D[1] / rect.height) * 100).toFixed(2));
+                  
+                  if (debugMode) {
+                    console.log('📍 Screen Position:', { screenX, screenY });
+                  }
+                  
+                  setMousePosition({ 
+                    x: screenX, 
+                    y: screenY, 
+                    coords3D: coords3D 
+                  });
+                } else {
+                  if (debugMode) {
+                    console.log('⚠️ Conversion failed, using pixel position');
+                  }
+                  setMousePosition({ x: mouseX, y: mouseY, coords3D: coords3D });
+                }
+              });
             } else {
-              // Sempre atualizar posição do mouse mesmo fora do debug mode
+              // Sem coordenadas 3D - mouse não está sobre o modelo
               setMousePosition({ x: mouseX, y: mouseY, coords3D: null });
             }
           });
@@ -274,6 +301,7 @@ export const SatellitePage = () => {
       ui_vr: 0,
       ui_fullscreen: 0,
       ui_annotations: 0,
+      ui_hint: 0,
       ui_theme: 'dark',
     });
   };
@@ -358,6 +386,7 @@ export const SatellitePage = () => {
           allow="autoplay; fullscreen; xr-spatial-tracking"
           className={`w-full h-full ${debugMode ? 'cursor-crosshair' : ''}`}
           id="api-frame"
+          frameBorder="0"
         />
         
         {/* Debug overlay - Mouse coordinates display */}
@@ -389,8 +418,18 @@ export const SatellitePage = () => {
           </motion.div>
         )}
 
-        {/* Overlay bloqueador durante o tour */}
-        {isTourActive && (
+        {/* Dark overlay for first 2 tour steps */}
+        {showTour && currentTourStep < 2 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/85 z-[9998]"
+          />
+        )}
+
+        {/* Overlay bloqueador durante o tour - desabilitado na etapa 8/8 */}
+        {isTourActive && currentTourStep < tourSteps.length - 1 && (
           <div className="absolute inset-0 bg-transparent cursor-not-allowed z-[5]" />
         )}
 
@@ -444,42 +483,6 @@ export const SatellitePage = () => {
           </motion.div>
         )}
 
-
-
-        {/* Modal for instrument details - Canto superior direito */}
-        <AnimatePresence>
-          {activeInstrument && (
-            <motion.div
-              initial={{ opacity: 0, x: 100, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 100, scale: 0.9 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute top-4 right-4 max-w-md w-[90%] md:w-auto pointer-events-auto z-[100]"
-            >
-              <div className="bg-black/90 backdrop-blur-lg rounded-xl p-5 border border-white/20 shadow-2xl">
-                <div className="flex justify-between items-start mb-3">
-                  <h2 className="text-lg font-bold text-white font-spartan pr-4">
-                    {activeInstrument.name}
-                  </h2>
-                  {!isTourActive && (
-                    <button
-                      onClick={() => setActiveInstrument(null)}
-                      className="text-white/60 hover:text-white transition-colors p-1 flex-shrink-0"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                <p className="text-white/80 font-poppins leading-relaxed text-sm">
-                  {activeInstrument.description}
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Guide Character with Tour */}
         {showTour && (
           <motion.div
@@ -507,9 +510,11 @@ export const SatellitePage = () => {
             className="fixed bottom-8 right-4 z-[10001] flex flex-col gap-3 pointer-events-auto items-end"
           >
             {/* Info Badge */}
-            <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg px-5 py-2 text-center">
-              <p className="text-blue-300 text-xs font-poppins">
-                🔒 Complete the tour to unlock the exploration features
+            <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg px-5 py-2 text-center w-[380px]">
+              <p className="text-blue-300 text-xs font-poppins whitespace-nowrap">
+                {currentTourStep === tourSteps.length - 1
+                  ? '🔓 Exploration features unlocked!'
+                  : '🔒 Complete the tour to unlock the exploration features'}
               </p>
             </div>
 
@@ -543,27 +548,29 @@ export const SatellitePage = () => {
 
         {/* Step Indicator */}
         {showTour && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fixed top-8 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-4 py-2"
-          >
-            {tourSteps.map((_, index) => (
-              <div
-                key={index}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentTourStep
-                    ? 'w-8 bg-blue-500'
-                    : index < currentTourStep
-                    ? 'w-2 bg-blue-500/50'
-                    : 'w-2 bg-gray-600'
-                }`}
-              />
-            ))}
-            <span className="text-xs text-white ml-2 font-poppins">
-              {currentTourStep + 1}/{tourSteps.length}
-            </span>
-          </motion.div>
+          <div className="fixed top-8 left-0 right-0 flex justify-center z-[10001]">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-4 py-2"
+            >
+              {tourSteps.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    index === currentTourStep
+                      ? 'w-8 bg-blue-500'
+                      : index < currentTourStep
+                      ? 'w-2 bg-blue-500/50'
+                      : 'w-2 bg-gray-600'
+                  }`}
+                />
+              ))}
+              <span className="text-xs text-white ml-2 font-poppins">
+                {currentTourStep + 1}/{tourSteps.length}
+              </span>
+            </motion.div>
+          </div>
         )}
 
         {/* Debug Mode Controls */}
@@ -612,25 +619,30 @@ export const SatellitePage = () => {
               {/* Mouse Position Tracker */}
               <div className="mb-3 space-y-2">
                 <p className="text-cyan-400 font-mono text-xs font-bold mb-1">👁️ MOUSE TRACKER:</p>
-                <div className="bg-cyan-500/10 border border-cyan-400/30 rounded p-2 space-y-1">
-                  <div>
-                    <span className="text-cyan-300 text-xs font-mono">2D Position:</span>
-                    <p className="text-white font-mono text-xs ml-2">
-                      X: {mousePosition.x}px, Y: {mousePosition.y}px
+                <div className="bg-cyan-500/10 border border-cyan-400/30 rounded p-2 space-y-2">
+                  {/* 2D Screen Position (X, Y in %) - Always show */}
+                  <div className={`${mousePosition.coords3D ? 'bg-cyan-600/20 border border-cyan-400/50' : 'bg-gray-600/10 border border-gray-500/30'} rounded p-2`}>
+                    <span className={`text-xs font-mono font-bold block mb-1 ${mousePosition.coords3D ? 'text-cyan-200' : 'text-gray-400'}`}>
+                      📍 2D Screen Position:
+                    </span>
+                    <p className={`font-mono text-sm ml-2 font-bold ${mousePosition.coords3D ? 'text-white' : 'text-gray-400'}`}>
+                      X: {typeof mousePosition.x === 'number' ? mousePosition.x.toFixed(2) : mousePosition.x}% | Y: {typeof mousePosition.y === 'number' ? mousePosition.y.toFixed(2) : mousePosition.y}%
                     </p>
                   </div>
+                  
+                  {/* 3D World Coordinates - Only when hovering model */}
                   {mousePosition.coords3D ? (
-                    <div>
-                      <span className="text-cyan-300 text-xs font-mono">3D Coords:</span>
+                    <div className="bg-green-500/10 border border-green-400/30 rounded p-2">
+                      <span className="text-green-300 text-xs font-mono font-bold block mb-1">🎯 3D World Coords:</span>
                       <p className="text-white font-mono text-xs ml-2 font-bold">
                         [{mousePosition.coords3D[0]}, {mousePosition.coords3D[1]}, {mousePosition.coords3D[2]}]
                       </p>
                     </div>
                   ) : (
-                    <div>
-                      <span className="text-cyan-300 text-xs font-mono">3D Coords:</span>
+                    <div className="bg-gray-600/10 border border-gray-500/30 rounded p-2">
+                      <span className="text-gray-400 text-xs font-mono">🎯 3D World Coords:</span>
                       <p className="text-gray-500 font-mono text-xs ml-2 italic">
-                        Hover over satellite
+                        Hover directly over satellite model
                       </p>
                     </div>
                   )}
@@ -703,7 +715,7 @@ export const SatellitePage = () => {
             >
               <GuideCharacter
                 imageUrl={satelliteImage}
-                message="Congratulations! You've completed the satellite tour. Now let's explore the real data Terra has collected over the years. Ready to begin your adventure?"
+                message="Now that you've seen me, let me show you what I see."
                 isActive={true}
                 showMessage
                 avatarSize="lg"
@@ -723,7 +735,7 @@ export const SatellitePage = () => {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-white font-spartan font-bold text-lg tracking-wider">
-                    BEGIN ADVENTURE
+                    SHOW ME
                   </span>
                   <svg 
                     className="w-6 h-6 text-white transition-transform duration-300 group-hover:translate-x-2" 

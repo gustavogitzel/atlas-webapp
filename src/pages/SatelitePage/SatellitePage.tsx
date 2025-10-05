@@ -274,6 +274,7 @@ export const SatellitePage = () => {
       ui_vr: 0,
       ui_fullscreen: 0,
       ui_annotations: 0,
+      ui_hint: 0,
       ui_theme: 'dark',
     });
   };
@@ -358,6 +359,7 @@ export const SatellitePage = () => {
           allow="autoplay; fullscreen; xr-spatial-tracking"
           className={`w-full h-full ${debugMode ? 'cursor-crosshair' : ''}`}
           id="api-frame"
+          frameBorder="0"
         />
         
         {/* Debug overlay - Mouse coordinates display */}
@@ -484,7 +486,7 @@ export const SatellitePage = () => {
             <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg px-5 py-2 text-center w-[380px]">
               <p className="text-blue-300 text-xs font-poppins whitespace-nowrap">
                 {currentTourStep === tourSteps.length - 1
-                  ? '✨ Exploration features unlocked!'
+                  ? '🔓 Exploration features unlocked!'
                   : '🔒 Complete the tour to unlock the exploration features'}
               </p>
             </div>

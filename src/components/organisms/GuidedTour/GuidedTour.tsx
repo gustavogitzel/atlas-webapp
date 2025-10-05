@@ -202,6 +202,14 @@ export const GuidedTour = ({
                 <span>View Flood Story</span>
                 <ChevronRight className="h-5 w-5" />
               </button>
+            ) : isLastStep && step.id === 'credits' ? (
+              <button
+                onClick={() => window.location.href = '/credits'}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg border border-purple-400 text-white font-semibold transition-all hover:scale-105 shadow-lg shadow-purple-500/50 flex items-center gap-2"
+              >
+                <span>View Credits</span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
             ) : (
               <button
                 onClick={handleNext}

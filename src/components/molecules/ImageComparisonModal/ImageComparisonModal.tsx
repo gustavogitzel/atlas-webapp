@@ -62,7 +62,7 @@ export const ImageComparisonModal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/90 z-[10002] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/90 z-[9999] backdrop-blur-sm cursor-pointer"
           />
 
           {/* Modal */}
@@ -70,8 +70,9 @@ export const ImageComparisonModal = ({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 z-[10003] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none"
           >
+            <div className="pointer-events-auto">
             <div className="bg-black/80 backdrop-blur-md border border-white/20 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-white/20">
@@ -152,6 +153,7 @@ export const ImageComparisonModal = ({
                   Drag the slider left and right to compare images
                 </p>
               </div>
+            </div>
             </div>
           </motion.div>
         </>

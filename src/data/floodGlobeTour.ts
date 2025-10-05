@@ -136,10 +136,18 @@ export const createFloodGlobeTour = (
       description: "This is what climate change looks like from space. But seeing is the first step to understanding, and understanding is the first step to action. Let me show you the before and after...",
       showOverlay: false,
       showSpotlight: false,
-      requiresInteraction: true,
       action: () => {
         setSelectedLayers([]);
       },
+    },
+
+    // Step 7: Credits
+    {
+      id: 'credits',
+      title: '🌍 Thank You',
+      description: "Thank you for joining me on this journey through space and time. These stories are real, and they matter. Want to learn more about the data and technology behind these visualizations?",
+      showOverlay: true,
+      showSpotlight: false,
     },
   ];
 };

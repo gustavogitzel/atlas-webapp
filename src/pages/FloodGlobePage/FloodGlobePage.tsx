@@ -181,6 +181,7 @@ const FLOOD_INFO = {
 
 export const FloodGlobePage = () => {
   const globeRef = useRef<any>(null);
+  const comparisonShownRef = useRef(false);
   const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
   const [selectedBaseLayer, setSelectedBaseLayer] = useState('terrain-relief');
   const [showInfo, setShowInfo] = useState(false);
@@ -771,11 +772,22 @@ export const FloodGlobePage = () => {
         isOpen={showTour}
         onClose={() => setShowTour(false)}
         characterImage={satelliteImage}
-        onComplete={() => setShowTour(false)}
+        onComplete={() => {
+          setShowTour(false);
+          comparisonShownRef.current = false;
+        }}
         onStepChange={(stepIndex: number) => {
-          // Open comparison modal on final step
-          if (tourSteps[stepIndex]?.id === 'final-message') {
+          console.log('Step changed:', stepIndex, tourSteps[stepIndex]?.id, 'comparisonShown:', comparisonShownRef.current);
+          // Open comparison modal on final-message step (only once)
+          if (tourSteps[stepIndex]?.id === 'final-message' && !comparisonShownRef.current) {
+            console.log('Opening comparison modal');
             setShowComparison(true);
+            comparisonShownRef.current = true;
+          }
+          // Close comparison modal when moving to credits step
+          if (tourSteps[stepIndex]?.id === 'credits') {
+            console.log('Closing comparison modal for credits');
+            setShowComparison(false);
           }
         }}
       />

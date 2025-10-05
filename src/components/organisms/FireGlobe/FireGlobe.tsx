@@ -193,9 +193,8 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     });
   }, [uniqueDates, showAerosolLayer]);
 
-  // Check if images are already cached (from HomePage)
-  // If so, skip preloading to avoid duplicate work
-  const { getComposedUrl } = useImagePreloader(
+  // Preload all images for instant layer/date switching
+  const { isLoading: imagesLoading, progress: imageProgress, getComposedUrl } = useImagePreloader(
     imageUrls, 
     10,
     overlayUrls,
@@ -457,6 +456,16 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     return regionOption?.region ? [regionOption.region] : [];
   }, [selectedRegion]);
 
+
+  // Show loading screen while preloading images
+  if (imagesLoading) {
+    return (
+      <LoadingScreen
+        title="Loading Fire Imagery"
+        message={`Caching ${imageUrls.length} images for instant playback... ${Math.round(imageProgress)}%`}
+      />
+    );
+  }
 
   // Show globe immediately, data will populate when ready
   if (!allFireData || !allFireData.features || allFireData.features.length === 0) {

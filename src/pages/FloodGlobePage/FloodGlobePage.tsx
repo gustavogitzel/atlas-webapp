@@ -2,8 +2,10 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import Globe from 'react-globe.gl';
 import { HelpCircle, Layers, Info } from 'lucide-react';
 import { IconButton } from '@atoms/IconButton';
+import { LoadingScreen } from '@molecules/LoadingScreen';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { GuidedTour } from '@organisms/GuidedTour';
+import { useImagePreloader } from '@/hooks/useImagePreloader';
 import { createFloodGlobeTour } from '@/data/floodGlobeTour';
 import satelliteImage from '@/assets/images/satellite.png';
 
@@ -72,13 +74,35 @@ const getLayerUrl = (layerName: string, zoomLevel: number, transparent: boolean 
   return `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?${params.toString()}`;
 };
 
-// Helper function to load images
+// Helper function to load images (fast with Service Worker cache)
 const loadImage = (url: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
+    const startTime = performance.now();
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
+    
+    // Set a timeout to reject if image takes too long
+    const timeout = setTimeout(() => {
+      reject(new Error('Image load timeout'));
+    }, 10000); // Increased to 10s
+    
+    img.onload = () => {
+      clearTimeout(timeout);
+      const loadTime = performance.now() - startTime;
+      if (loadTime > 100) {
+        console.warn(`⚠️ Slow image load: ${loadTime.toFixed(0)}ms - ${url.substring(0, 80)}...`);
+      } else {
+        console.log(`✅ Fast load: ${loadTime.toFixed(0)}ms`);
+      }
+      resolve(img);
+    };
+    
+    img.onerror = () => {
+      clearTimeout(timeout);
+      console.error(`❌ Failed to load: ${url.substring(0, 80)}...`);
+      reject(new Error('Image load failed'));
+    };
+    
     img.src = url;
   });
 };
@@ -125,6 +149,49 @@ export const FloodGlobePage = () => {
   
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Generate all image URLs for preloading (all combinations)
+  const allImageUrls = useMemo(() => {
+    const allUrls: string[] = [];
+    const floodLayers = [
+      'ASTER_GDEM_Color_Shaded_Relief',
+      'MODIS_Terra_Cloud_Phase_Optical_Properties',
+      'MODIS_Terra_Cloud_Optical_Thickness'
+    ];
+    
+    floodLayers.forEach(layerName => {
+      uniqueDates.forEach(date => {
+        const params = new URLSearchParams({
+          SERVICE: 'WMS',
+          REQUEST: 'GetMap',
+          layers: layerName,
+          version: '1.3.0',
+          crs: 'EPSG:4326',
+          transparent: layerName === 'ASTER_GDEM_Color_Shaded_Relief' ? 'false' : 'true',
+          width: '2048',
+          height: '1024',
+          bbox: '-90,-180,90,180',
+          format: layerName === 'ASTER_GDEM_Color_Shaded_Relief' ? 'image/jpeg' : 'image/png',
+          time: date,
+        });
+        allUrls.push(`https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?${params.toString()}`);
+      });
+    });
+    
+    return allUrls;
+  }, [uniqueDates]);
+
+  // Preload all images (3 layers × 29 dates = 87 images)
+  const { isLoading: imagesLoading, progress: imageProgress } = useImagePreloader(allImageUrls, 10);
+  
+  // Log preload status
+  useEffect(() => {
+    console.log(`📦 Preload status: ${imagesLoading ? 'Loading' : 'Complete'} - ${Math.round(imageProgress)}%`);
+    console.log(`📊 Total images to preload: ${allImageUrls.length}`);
+  }, [imagesLoading, imageProgress, allImageUrls.length]);
+  
+  // Cache for pre-composed textures (base + layers)
+  const composedTextureCache = useRef<Map<string, string>>(new Map());
+
   // Update current date when index changes
   useEffect(() => {
     if (uniqueDates[currentDateIndex]) {
@@ -159,6 +226,8 @@ export const FloodGlobePage = () => {
   // Compose globe texture with selected layers
   useEffect(() => {
     const composeTexture = async () => {
+      const startTime = performance.now();
+      
       // Generate base URL with current zoom and date
       const baseUrl = getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', globeZoom, false, 'image/jpeg', currentDate);
       
@@ -170,6 +239,20 @@ export const FloodGlobePage = () => {
       // If no layers selected, just use base
       if (selectedLayers.length === 0) {
         setGlobeTexture(baseUrl);
+        const endTime = performance.now();
+        console.log(`⚡ Loaded in ${(endTime - startTime).toFixed(0)}ms`);
+        return;
+      }
+      
+      // Generate cache key for this combination
+      const cacheKey = `${currentDate}-${selectedLayers.sort().join('-')}-${globeZoom}`;
+      
+      // Check if already composed
+      if (composedTextureCache.current.has(cacheKey)) {
+        const cachedTexture = composedTextureCache.current.get(cacheKey)!;
+        setGlobeTexture(cachedTexture);
+        const endTime = performance.now();
+        console.log(`⚡ From cache in ${(endTime - startTime).toFixed(0)}ms`);
         return;
       }
 
@@ -210,7 +293,15 @@ export const FloodGlobePage = () => {
           }
         }
 
-        setGlobeTexture(canvas.toDataURL('image/jpeg', 0.9));
+        const composedTexture = canvas.toDataURL('image/jpeg', 0.9);
+        
+        // Cache the composed texture
+        composedTextureCache.current.set(cacheKey, composedTexture);
+        
+        setGlobeTexture(composedTexture);
+        const endTime = performance.now();
+        console.log(`⚡ Composed & cached in ${(endTime - startTime).toFixed(0)}ms`);
+        console.log(`💾 Cache size: ${composedTextureCache.current.size} textures`);
       } catch (error) {
         console.error('Error composing layers:', error);
         setGlobeTexture(baseUrl);
@@ -219,6 +310,71 @@ export const FloodGlobePage = () => {
 
     composeTexture();
   }, [selectedLayers, globeZoom, currentDate]);
+
+  // Pre-compose common combinations in background after loading
+  useEffect(() => {
+    if (imagesLoading) return;
+    
+    const preComposeTextures = async () => {
+      console.log('🎨 Pre-composing common layer combinations...');
+      
+      // Pre-compose most common combinations (first 10 dates with each layer)
+      const commonDates = uniqueDates.slice(0, 10);
+      const layerCombinations = [
+        ['cloud-phase'],
+        ['cloud-thickness'],
+        ['cloud-phase', 'cloud-thickness'],
+      ];
+      
+      for (const date of commonDates) {
+        for (const layers of layerCombinations) {
+          const cacheKey = `${date}-${layers.sort().join('-')}-1`;
+          
+          // Skip if already cached
+          if (composedTextureCache.current.has(cacheKey)) continue;
+          
+          try {
+            const baseUrl = getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', 1, false, 'image/jpeg', date);
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) continue;
+            
+            const baseImg = await loadImage(baseUrl);
+            ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
+            
+            for (const layerId of layers) {
+              const layerName = layerId === 'cloud-phase' 
+                ? 'MODIS_Terra_Cloud_Phase_Optical_Properties'
+                : 'MODIS_Terra_Cloud_Optical_Thickness';
+              const layerUrl = getLayerUrl(layerName, 1, true, 'image/png', date);
+              const layerImg = await loadImage(layerUrl);
+              ctx.globalAlpha = 0.7;
+              ctx.drawImage(layerImg, 0, 0, canvas.width, canvas.height);
+              ctx.globalAlpha = 1.0;
+            }
+            
+            const composedTexture = canvas.toDataURL('image/jpeg', 0.9);
+            composedTextureCache.current.set(cacheKey, composedTexture);
+          } catch (error) {
+            // Skip on error
+          }
+          
+          // Small delay to not block UI
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+      }
+      
+      console.log(`✅ Pre-composed ${composedTextureCache.current.size} textures`);
+    };
+    
+    // Start pre-composing after a short delay
+    setTimeout(() => {
+      preComposeTextures();
+    }, 2000);
+  }, [imagesLoading, uniqueDates]);
 
   // Auto-start tour on first load
   useEffect(() => {
@@ -236,6 +392,16 @@ export const FloodGlobePage = () => {
   };
 
   const tourSteps = useMemo(() => createFloodGlobeTour(), []);
+
+  // Show loading screen while preloading images
+  if (imagesLoading) {
+    return (
+      <LoadingScreen
+        title="Loading Flood Imagery"
+        message={`Caching ${allImageUrls.length} images for instant playback... ${Math.round(imageProgress)}%`}
+      />
+    );
+  }
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">

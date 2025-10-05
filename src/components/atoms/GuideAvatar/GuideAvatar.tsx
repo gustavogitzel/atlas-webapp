@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -25,6 +26,23 @@ export const GuideAvatar = ({
   size = 'md',
   className,
 }: GuideAvatarProps) => {
+  const [videoError, setVideoError] = useState(false);
+  const [isVideo, setIsVideo] = useState(false);
+  const fallbackImage = '/src/assets/images/satellite.png';
+
+  useEffect(() => {
+    // Check if the URL is a video file (not GIF - GIFs are treated as images)
+    const videoExtensions = ['.mov', '.mp4', '.webm'];
+    const isVideoFile = videoExtensions.some(ext => imageUrl.toLowerCase().endsWith(ext));
+    setIsVideo(isVideoFile);
+    setVideoError(false);
+  }, [imageUrl]);
+
+  const handleVideoError = () => {
+    console.warn('Video failed to load, falling back to image:', imageUrl);
+    setVideoError(true);
+  };
+
   return (
     <motion.div
       initial={{ scale: 0, opacity: 0 }}
@@ -79,7 +97,7 @@ export const GuideAvatar = ({
           }}
         />
 
-        {/* Character image */}
+        {/* Character image or video */}
         <div
           className={cn(
             'relative rounded-full overflow-hidden',
@@ -88,11 +106,34 @@ export const GuideAvatar = ({
             sizeStyles[size]
           )}
         >
-          <img
-            src={imageUrl}
-            alt="Guide character"
-            className="w-full h-full object-cover"
-          />
+          {isVideo && !videoError ? (
+            <video
+              src={imageUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              onError={handleVideoError}
+              className="w-full h-full object-cover"
+              style={{ backgroundColor: '#000' }}
+            >
+              <source src={imageUrl} type="video/quicktime" />
+              <source src={imageUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <img
+              src={videoError ? fallbackImage : imageUrl}
+              alt="Guide character"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.warn('Image failed to load, trying fallback');
+                if (e.currentTarget.src !== fallbackImage) {
+                  e.currentTarget.src = fallbackImage;
+                }
+              }}
+            />
+          )}
           
           {/* Shine effect */}
           {isActive && (

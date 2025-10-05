@@ -1,0 +1,1 @@
+export { BackgroundMusic } from './BackgroundMusic';

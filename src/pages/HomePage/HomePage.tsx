@@ -1,109 +1,21 @@
-import { useRef, useMemo } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HeroSection } from '@organisms/HeroSection';
-import { AdventureSection } from '@organisms/AdventureSection';
-import { useSnapScroll, useIntersectionObserver, useParallax } from '@/hooks';
-import { useImagePreloader } from '@/hooks/useImagePreloader';
-import { useFirePoints } from '@/hooks/useFireData';
-import { getLayerUrl, GLOBE_LAYERS } from '@/config/globeLayers';
-import { composeGlobeTexture } from '@/utils/textureComposer';
-import type { MediaItem } from '@molecules/MediaGrid';
+import { SplitText } from '@atoms/SplitText';
+import { ScrollButton } from '@atoms/ScrollButton';
+import { useSnapScroll, useIntersectionObserver } from '@/hooks';
 
 import backgroundHome from '../../assets/images/background_home.jpg';
-
 /**
  * HomePage - Página principal com Tailwind
  * Storytelling: Terra como "médico" examinando a saúde do planeta
- * Refactored following Atomic Design principles
  */
-
-// Media items data
-const MEDIA_ITEMS: MediaItem[] = [
-  {
-    src: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDd6Y2F2dWF1OXE4MHBxOWF1dWx4NXN0Z2RmOWF1bDV0YnB1aXpmaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3978y5HqiEtqupiM/giphy.gif",
-    alt: "Space Adventure 1"
-  },
-  {
-    src: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHpmM2RqbWN2ZjB1Y2wzOHYyb2VpN2VoOXBhMzF0ZmZ0bG0xdWx6aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT0xezQGU5xCDxyEi4/giphy.gif",
-    alt: "Space Adventure 2"
-  },
-  {
-    src: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzRxY2kydDVpbjRtdXU1bDgxNmxqZm1yc2ZnYzZ5M2Z5OHR6cWRkeiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RHIKETUlUINYvV7CAO/giphy.gif",
-    alt: "Space Adventure 3"
-  }
-];
 
 export const HomePage = () => {
   const navigate = useNavigate();
   const adventureSectionRef = useRef<HTMLDivElement>(null);
-  const heroSectionRef = useRef<HTMLDivElement>(null);
-  
-  // Preload fire data and images in background
-  const { data: fireData } = useFirePoints({ maxPoints: 10000, minConfidence: 0 });
-  
-  // Generate image URLs for preloading (ALL layers + ALL dates)
-  const imageUrls = useMemo(() => {
-    if (!fireData?.features) return [];
-    
-    const dates = [...new Set(fireData.features.map((f) => f.properties.acq_date))].sort();
-    const allUrls: string[] = [];
-    
-    // Use imported GLOBE_LAYERS
-    GLOBE_LAYERS.forEach((layer) => {
-      // Skip earth-grey as it's a local asset
-      if (layer.id === 'earth-grey') return;
-      
-      dates.forEach(date => {
-        allUrls.push(getLayerUrl(layer, date, 1));
-      });
-    });
-    
-    return allUrls;
-  }, [fireData]);
-  
-  // Generate aerosol overlay URLs for all dates
-  const overlayUrls = useMemo(() => {
-    if (!fireData?.features) return [];
-    
-    const dates = [...new Set(fireData.features.map((f) => f.properties.acq_date))].sort();
-    
-    return dates.map(dateStr => {
-      const date = new Date(dateStr);
-      const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-      const formattedDate = lastDay.toISOString().split('T')[0];
-      
-      const baseUrl = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
-      const params = new URLSearchParams({
-        SERVICE: 'WMS',
-        REQUEST: 'GetMap',
-        layers: 'MISR_Aerosol_Optical_Depth_Avg_Green_Monthly',
-        version: '1.3.0',
-        crs: 'EPSG:4326',
-        transparent: 'true',
-        width: '2048',
-        height: '1024',
-        bbox: '-90,-180,90,180',
-        format: 'image/png',
-        time: formattedDate
-      });
-      
-      return `${baseUrl}?${params.toString()}`;
-    });
-  }, [fireData]);
-  
-  // Preload images with aerosol composition (all combinations)
-  const { isLoading: imagesLoading, progress: imageProgress } = useImagePreloader(
-    imageUrls,
-    10,
-    overlayUrls.length > 0 ? overlayUrls : undefined,
-    overlayUrls.length > 0 ? (base, overlay) => composeGlobeTexture(base, overlay, 0.3) : undefined
-  );
-  
-  // Ativa o scroll snap
-  useSnapScroll();
-  
-  // Parallax effect
-  const parallaxOffset = useParallax(0.5);
+
+  // Ativa o scroll snap e bloqueia o scroll livre
+  useSnapScroll({ preventScroll: true });
   
   // Detecta quando a seção de aventura está visível
   const isAdventureSectionVisible = useIntersectionObserver(adventureSectionRef, 0.6);
@@ -113,67 +25,154 @@ export const HomePage = () => {
   };
 
   const scrollToTop = () => {
-    heroSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const goToFireGlobe = () => {
-    navigate('/satellite');
+    const heroSection = document.querySelector('#hero-section');
+    heroSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <div className="relative">
-      {/* Discrete Image Preload Indicator */}
-      {imagesLoading && imageUrls.length > 0 && (
-        <div className="fixed bottom-4 right-4 z-50 bg-black/80 backdrop-blur-md border border-white/20 rounded-lg px-4 py-2 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs text-white font-medium">Preloading imagery</span>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="w-32 bg-gray-700 rounded-full h-1 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-1 transition-all duration-300"
-                    style={{ width: `${imageProgress}%` }}
-                  />
-                </div>
-                <span className="text-xs text-gray-400">{Math.round(imageProgress)}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Fixed Background with Parallax */}
+      {/* Hero Section */}
       <div 
-        className="fixed inset-0 -z-10"
+        id="hero-section"
         style={{ 
           backgroundImage: `linear-gradient(to bottom right, rgba(0, 0, 128, 0.5), rgba(0, 0, 128, 0.3)), url(${backgroundHome})`,
           backgroundSize: 'cover',
-          backgroundPosition: `center ${parallaxOffset}px`,
-          backgroundAttachment: 'fixed',
+          backgroundPosition: 'center',
         }}
-      />
+        className="min-h-screen relative snap-start"
+      >
+        {/* Content */}
+        <div className="relative flex min-h-screen items-center justify-center">
+          <main className="w-full">
+            <div className="animate-fade-in mx-auto max-w-3xl px-4">
+              <div className="text-center space-y-6">
+                <h1 className="font-spartan tracking-[1rem] text-7xl font-bold text-white drop-shadow-lg">
+                  <SplitText delay={0.2} stagger={0.08}>
+                    A.T.L.A.S.
+                  </SplitText>
+                </h1>
+                <p className="font-poppins text-xl text-white/95 font-light tracking-wide max-w-2xl mx-auto">
+                  <SplitText delay={1.2} stagger={0.02} duration={0.4}>
+                    Assessment of Terra's Legacy & Atmospheric Signs
+                  </SplitText>
+                </p>
+              </div>
 
-      {/* Hero Section */}
-      <HeroSection
-        ref={heroSectionRef}
-        title="A.T.L.A.S."
-        subtitle="Assessment of Terra's Legacy & Atmospheric Signs"
-        onScrollClick={scrollToAdventure}
-      />
+              {/* Scroll Button */}
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+                <ScrollButton onClick={scrollToAdventure} />
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
 
       {/* Adventure Section */}
-      <AdventureSection
+      <div 
         ref={adventureSectionRef}
-        title="PREPARE TO EXPERIENCE"
-        description="A journey throughout 25 years of Earth observation"
-        mediaItems={MEDIA_ITEMS}
-        isVisible={isAdventureSectionVisible}
-        onScrollToTop={scrollToTop}
-        onPrimaryAction={goToFireGlobe}
-        primaryActionLabel="LET'S GO"
-      />
+        style={{ 
+          backgroundImage: `linear-gradient(to bottom right, rgba(0, 0, 128, 0.5), rgba(0, 0, 128, 0.3)), url(${backgroundHome})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+        className="min-h-screen relative flex items-center justify-center overflow-hidden snap-start"
+      >
+        <button
+          onClick={scrollToTop}
+          className="absolute top-8 left-1/2 -translate-x-1/2 group bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full p-3 transition-all duration-300 z-10"
+          aria-label="Voltar ao topo"
+        >
+          <svg
+            className="w-5 h-5 text-white transition-transform duration-300 group-hover:-translate-y-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </button>
+        <div className="text-center max-w-7xl mx-auto px-4">
+          <div 
+            className={`transform transition-all duration-1000 ${
+              isAdventureSectionVisible 
+                ? 'translate-y-0 opacity-100' 
+                : 'translate-y-20 opacity-0'
+            }`}
+          >
+            <h2 className="text-6xl font-spartan font-bold text-white mb-4">
+              <SplitText delay={0.3} stagger={0.08}>
+                PREPARE TO EXPERIENCE
+              </SplitText>
+            </h2>
+
+            <p className="font-poppins text-xl text-white/95 font-light tracking-wide max-w-2xl mx-auto mb-16">
+              <SplitText delay={1.2} stagger={0.02} duration={0.4}>
+                A journey throughout 25 years of Earth observation
+              </SplitText>
+            </p>
+
+            {/* GIFs Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+              {[
+                "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDd6Y2F2dWF1OXE4MHBxOWF1dWx4NXN0Z2RmOWF1bDV0YnB1aXpmaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3978y5HqiEtqupiM/giphy.gif",
+                "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHpmM2RqbWN2ZjB1Y2wzOHYyb2VpN2VoOXBhMzF0ZmZ0bG0xdWx6aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT0xezQGU5xCDxyEi4/giphy.gif",
+                "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzRxY2kydDVpbjRtdXU1bDgxNmxqZm1yc2ZnYzZ5M2Z5OHR6cWRkeiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RHIKETUlUINYvV7CAO/giphy.gif"
+              ].map((gif, index) => (
+                <div 
+                  key={index}
+                  className={`transform transition-all duration-1000 ${
+                    isAdventureSectionVisible 
+                      ? 'translate-y-0 opacity-100' 
+                      : 'translate-y-20 opacity-0'
+                  }`}
+                  style={{ transitionDelay: `${300 + (index * 200)}ms` }}
+                >
+                  <img 
+                    src={gif}
+                    alt={`Space Adventure ${index + 1}`}
+                    className="rounded-lg shadow-lg w-full aspect-video object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Let's Go Button */}
+        <div 
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 transform transition-all duration-1000"
+          style={{ 
+            transitionDelay: '1200ms',
+            opacity: isAdventureSectionVisible ? 1 : 0,
+            transform: isAdventureSectionVisible ? 'translate(-50%, 0)' : 'translate(-50%, 20px)'
+          }}
+        >
+          <button
+              className="group bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full py-4 px-8 transition-all duration-300 flex items-center gap-2"
+              onClick={() => navigate('/satellite')}
+            >
+              <span className="text-white font-spartan font-bold tracking-wider">LET'S GO</span>
+              <svg 
+                className="w-5 h-5 text-white transition-transform duration-300 group-hover:translate-x-1" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" 
+                />
+              </svg>
+            </button>
+        </div>
+      </div>
     </div>
   );
 };

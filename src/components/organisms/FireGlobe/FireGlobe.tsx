@@ -59,14 +59,14 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   const [showFilters, setShowFilters] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState('');
   
-  // Visualization mode
-  const [visualizationMode, setVisualizationMode] = useState<'points' | 'heatmap'>('points');
+  // Visualization mode - Default OFF (heatmap means no points visible)
+  const [visualizationMode, setVisualizationMode] = useState<'points' | 'heatmap'>('heatmap');
   
   // Base layer selection - Default to Earth Grey
   const [selectedLayerId, setSelectedLayerId] = useState('earth-grey');
   
-  // Aerosol overlay layer
-  const [showAerosolLayer, setShowAerosolLayer] = useState(true);
+  // Aerosol overlay layer - Default OFF
+  const [showAerosolLayer, setShowAerosolLayer] = useState(false);
   
   // Zoom level for dynamic resolution
   const [globeZoom, setGlobeZoom] = useState(1);
@@ -597,7 +597,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
           <IconButton
             icon={<Map />}
             onClick={() => setVisualizationMode(prev => prev === 'points' ? 'heatmap' : 'points')}
-            variant="default"
+            variant={visualizationMode === 'points' ? "default" : "outline"}
             title={visualizationMode === 'points' ? 'Switch to Heatmap' : 'Switch to Points'}
             className="visualization-toggle"
           />

@@ -136,14 +136,12 @@ export const GuidedTour = ({
           </AnimatePresence>
 
 
-          {/* Character with speech - Position based on step.position (mobile only) */}
+          {/* Character with speech - Always at bottom */}
           <motion.div
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className={`fixed left-8 z-[10001] pointer-events-none bottom-8 ${
-              step.position === 'top' ? 'md:bottom-8 top-8' : 'md:bottom-8'
-            }`}
+            className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
           >
             <GuideCharacter
               imageUrl={characterImage}

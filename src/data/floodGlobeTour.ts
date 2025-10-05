@@ -129,13 +129,14 @@ export const createFloodGlobeTour = (
       },
     },
 
-    // Step 6: Final message
+    // Step 6: Final message with comparison
     {
       id: 'final-message',
       title: '🛰️ Terra Satellite',
-      description: "This is what climate change looks like from space. But seeing is the first step to understanding, and understanding is the first step to action.",
+      description: "This is what climate change looks like from space. But seeing is the first step to understanding, and understanding is the first step to action. Let me show you the before and after...",
       showOverlay: false,
       showSpotlight: false,
+      requiresInteraction: true,
       action: () => {
         setSelectedLayers([]);
       },

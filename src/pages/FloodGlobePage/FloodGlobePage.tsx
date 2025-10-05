@@ -5,9 +5,12 @@ import { IconButton } from '@atoms/IconButton';
 import { LoadingScreen } from '@molecules/LoadingScreen';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { GuidedTour } from '@organisms/GuidedTour';
+import { ImageComparisonModal } from '@molecules/ImageComparisonModal';
 import { useImagePreloader } from '@/hooks/useImagePreloader';
 import { createFloodGlobeTour } from '@/data/floodGlobeTour';
 import satelliteImage from '@/assets/images/satellite.png';
+import beforeFloodImage from '@/assets/images/2023-esquerda.jpg';
+import afterFloodImage from '@/assets/images/2024-direita.jpg';
 
 /**
  * FloodGlobePage - Visualização de enchentes no Brasil
@@ -182,6 +185,7 @@ export const FloodGlobePage = () => {
   const [selectedBaseLayer, setSelectedBaseLayer] = useState('terrain-relief');
   const [showInfo, setShowInfo] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
   const [globeTexture, setGlobeTexture] = useState(() => getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', 1, false, 'image/jpeg'));
   const [globeZoom, setGlobeZoom] = useState(1);
   
@@ -768,6 +772,24 @@ export const FloodGlobePage = () => {
         onClose={() => setShowTour(false)}
         characterImage={satelliteImage}
         onComplete={() => setShowTour(false)}
+        onStepChange={(stepIndex: number) => {
+          // Open comparison modal on final step
+          if (tourSteps[stepIndex]?.id === 'final-message') {
+            setShowComparison(true);
+          }
+        }}
+      />
+
+      {/* Image Comparison Modal */}
+      <ImageComparisonModal
+        isOpen={showComparison}
+        onClose={() => setShowComparison(false)}
+        beforeImage={afterFloodImage}
+        afterImage={beforeFloodImage}
+        beforeLabel="2023"
+        afterLabel="2024"
+        title="Rio Grande do Sul Flooding - Before & After"
+        description="Drag the slider left and right to compare satellite images"
       />
     </div>
   );

@@ -99,6 +99,48 @@ export const HomePage = () => {
     overlayUrls.length > 0 ? (base, overlay) => composeGlobeTexture(base, overlay, 0.3) : undefined
   );
   
+  // Generate flood page image URLs (April 17 - May 15, 2024)
+  const floodImageUrls = useMemo(() => {
+    const dates: string[] = [];
+    const startDate = new Date('2024-04-17');
+    const endDate = new Date('2024-05-15');
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    
+    const allUrls: string[] = [];
+    const floodLayers = [
+      'ASTER_GDEM_Color_Shaded_Relief',
+      'MODIS_Terra_Cloud_Phase_Optical_Properties',
+      'MODIS_Terra_Cloud_Optical_Thickness'
+    ];
+    
+    floodLayers.forEach(layerName => {
+      dates.forEach(date => {
+        const params = new URLSearchParams({
+          SERVICE: 'WMS',
+          REQUEST: 'GetMap',
+          layers: layerName,
+          version: '1.3.0',
+          crs: 'EPSG:4326',
+          transparent: layerName === 'ASTER_GDEM_Color_Shaded_Relief' ? 'false' : 'true',
+          width: '2048',
+          height: '1024',
+          bbox: '-90,-180,90,180',
+          format: layerName === 'ASTER_GDEM_Color_Shaded_Relief' ? 'image/jpeg' : 'image/png',
+          time: date,
+        });
+        allUrls.push(`https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?${params.toString()}`);
+      });
+    });
+    
+    return allUrls;
+  }, []);
+  
+  // Preload flood images in background (after fire images)
+  useImagePreloader(floodImageUrls, 5);
+  
   // Ativa o scroll snap
   useSnapScroll();
   

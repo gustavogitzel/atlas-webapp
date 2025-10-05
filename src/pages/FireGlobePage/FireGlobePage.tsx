@@ -6,5 +6,5 @@ import { FireGlobe } from '@organisms/FireGlobe';
  */
 
 export const FireGlobePage = () => {
-  return <FireGlobe maxPoints={10000} minConfidence={0} />;
+  return <FireGlobe/>;
 };

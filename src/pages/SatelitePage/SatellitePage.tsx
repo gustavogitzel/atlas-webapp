@@ -29,27 +29,27 @@ const tourSteps = [
   },
   {
     id: 'aster',
-    message:  "This is ASTER, my 3D scanner. It maps the shape and temperature of the land." ,
+    message:  "This is ASTER, my zoom lens and 3D scanner, mapping the land's shape and heat." ,
     instrumentId: 'ASTER',
   },
   {
     id: 'misr',
-    message:  "MISR uses nine cameras to see through haze and understand the air we breathe." ,
+    message:  "Meet MISR, my depth perception. It uses nine views to see the air in 3D." ,
     instrumentId: 'MISR',
   },
   {
     id: 'mopitt',
-    message:  "Meet MOPITT, my 'super-sniffer.' It detects invisible pollution." ,
+    message:  "MOPITT is my 'super-sniffer,' tracking invisible air pollution.",
     instrumentId: 'MOPITT',
   },
   {
     id: 'ceres',
-    message:  "And CERES, my energy meter. It checks Earth's temperature, like a planetary thermometer.",
+    message:  "And CERES, my planetary thermometer, checking Earth's energy balance.",
     instrumentId: 'CERES',
   },
   {
     id: 'conclusion',
-    message: 'Great job! You\'ve learned about all of Terra\'s instruments. Feel free to explore on your own by clicking the glowing points. Have fun discovering more!',
+    message: 'Now you have met my senses. You are free to explore. Take a moment to see me for yourself—hold and drag to get a closer look.',
   },
 ];
 
@@ -214,19 +214,46 @@ export const SatellitePage = () => {
             const mouseY = event.clientY || 0;
             
             if (debugMode) {
-              // Capturar coordenadas 3D do ponto onde o mouse está
-              if (event.position3D && event.position3D.length === 3) {
-                const coords: [number, number, number] = [
-                  parseFloat(event.position3D[0].toFixed(3)),
-                  parseFloat(event.position3D[1].toFixed(3)),
-                  parseFloat(event.position3D[2].toFixed(3))
-                ];
-                setMousePosition({ x: mouseX, y: mouseY, coords3D: coords });
-              } else {
-                setMousePosition({ x: mouseX, y: mouseY, coords3D: null });
+              console.log('🖱️ Mouse Event:', { mouseX, mouseY, has3D: !!event.position3D });
+            }
+            
+            // Capturar coordenadas 3D do ponto onde o mouse está
+            if (event.position3D && event.position3D.length === 3) {
+              const coords3D: [number, number, number] = [
+                parseFloat(event.position3D[0].toFixed(3)),
+                parseFloat(event.position3D[1].toFixed(3)),
+                parseFloat(event.position3D[2].toFixed(3))
+              ];
+              
+              if (debugMode) {
+                console.log('🎯 3D Coords found:', coords3D);
               }
+              
+              // Converter 3D para 2D (coordenadas de tela em %)
+              api.getWorldToScreenCoordinates(coords3D, (err: any, pos2D: any) => {
+                if (!err && pos2D && iframeRef.current) {
+                  const rect = iframeRef.current.getBoundingClientRect();
+                  const screenX = parseFloat(((pos2D[0] / rect.width) * 100).toFixed(2));
+                  const screenY = parseFloat(((pos2D[1] / rect.height) * 100).toFixed(2));
+                  
+                  if (debugMode) {
+                    console.log('📍 Screen Position:', { screenX, screenY });
+                  }
+                  
+                  setMousePosition({ 
+                    x: screenX, 
+                    y: screenY, 
+                    coords3D: coords3D 
+                  });
+                } else {
+                  if (debugMode) {
+                    console.log('⚠️ Conversion failed, using pixel position');
+                  }
+                  setMousePosition({ x: mouseX, y: mouseY, coords3D: coords3D });
+                }
+              });
             } else {
-              // Sempre atualizar posição do mouse mesmo fora do debug mode
+              // Sem coordenadas 3D - mouse não está sobre o modelo
               setMousePosition({ x: mouseX, y: mouseY, coords3D: null });
             }
           });
@@ -590,25 +617,30 @@ export const SatellitePage = () => {
               {/* Mouse Position Tracker */}
               <div className="mb-3 space-y-2">
                 <p className="text-cyan-400 font-mono text-xs font-bold mb-1">👁️ MOUSE TRACKER:</p>
-                <div className="bg-cyan-500/10 border border-cyan-400/30 rounded p-2 space-y-1">
-                  <div>
-                    <span className="text-cyan-300 text-xs font-mono">2D Position:</span>
-                    <p className="text-white font-mono text-xs ml-2">
-                      X: {mousePosition.x}px, Y: {mousePosition.y}px
+                <div className="bg-cyan-500/10 border border-cyan-400/30 rounded p-2 space-y-2">
+                  {/* 2D Screen Position (X, Y in %) - Always show */}
+                  <div className={`${mousePosition.coords3D ? 'bg-cyan-600/20 border border-cyan-400/50' : 'bg-gray-600/10 border border-gray-500/30'} rounded p-2`}>
+                    <span className={`text-xs font-mono font-bold block mb-1 ${mousePosition.coords3D ? 'text-cyan-200' : 'text-gray-400'}`}>
+                      📍 2D Screen Position:
+                    </span>
+                    <p className={`font-mono text-sm ml-2 font-bold ${mousePosition.coords3D ? 'text-white' : 'text-gray-400'}`}>
+                      X: {typeof mousePosition.x === 'number' ? mousePosition.x.toFixed(2) : mousePosition.x}% | Y: {typeof mousePosition.y === 'number' ? mousePosition.y.toFixed(2) : mousePosition.y}%
                     </p>
                   </div>
+                  
+                  {/* 3D World Coordinates - Only when hovering model */}
                   {mousePosition.coords3D ? (
-                    <div>
-                      <span className="text-cyan-300 text-xs font-mono">3D Coords:</span>
+                    <div className="bg-green-500/10 border border-green-400/30 rounded p-2">
+                      <span className="text-green-300 text-xs font-mono font-bold block mb-1">🎯 3D World Coords:</span>
                       <p className="text-white font-mono text-xs ml-2 font-bold">
                         [{mousePosition.coords3D[0]}, {mousePosition.coords3D[1]}, {mousePosition.coords3D[2]}]
                       </p>
                     </div>
                   ) : (
-                    <div>
-                      <span className="text-cyan-300 text-xs font-mono">3D Coords:</span>
+                    <div className="bg-gray-600/10 border border-gray-500/30 rounded p-2">
+                      <span className="text-gray-400 text-xs font-mono">🎯 3D World Coords:</span>
                       <p className="text-gray-500 font-mono text-xs ml-2 italic">
-                        Hover over satellite
+                        Hover directly over satellite model
                       </p>
                     </div>
                   )}
@@ -681,7 +713,7 @@ export const SatellitePage = () => {
             >
               <GuideCharacter
                 imageUrl={satelliteImage}
-                message="Congratulations! You've completed the satellite tour. Now let's explore the real data Terra has collected over the years. Ready to begin your adventure?"
+                message="Now that you've seen me, let me show you what I see."
                 isActive={true}
                 showMessage
                 avatarSize="lg"
@@ -701,7 +733,7 @@ export const SatellitePage = () => {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-white font-spartan font-bold text-lg tracking-wider">
-                    BEGIN ADVENTURE
+                    SHOW ME
                   </span>
                   <svg 
                     className="w-6 h-6 text-white transition-transform duration-300 group-hover:translate-x-2" 

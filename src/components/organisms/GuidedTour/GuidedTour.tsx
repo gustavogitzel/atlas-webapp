@@ -50,11 +50,6 @@ export const GuidedTour = ({
   const isFirstStep = currentStep === 0;
   
   const showOverlay = step.showOverlay !== false;
-  
-  // Aplicar opacidade e cores nas duas primeiras etapas
-  const isIntroStep = currentStep <= 1;
-  const avatarOpacity = isIntroStep ? 0.95 : 1;
-  const avatarFilter = isIntroStep ? 'saturate(1.2) brightness(1.1)' : 'none';
 
   // Execute action when step changes
   useEffect(() => {

@@ -167,9 +167,9 @@ export const SatellitePage = () => {
           console.log('Sketchfab viewer ready');
           
           // Configurar câmera inicial - visualização de baixo do satélite
-          // Posicionar câmera abaixo e ligeiramente afastada
+          // Posicionar câmera numa distância confortável
           api.setCameraLookAt(
-            [0, -3, 2],  // Posição da câmera (abaixo e atrás)
+            [20, 10, 15],  // Posição da câmera (distância ideal)
             [0, 0, 0],   // Olhando para o centro do satélite
             0            // Sem animação inicial
           );
@@ -219,11 +219,11 @@ export const SatellitePage = () => {
     // Posições 3D aproximadas dos instrumentos baseadas na imagem NASA Terra
     // Coordenadas ajustadas para visualização de baixo do satélite
     const instrument3DPositions: Record<string, [number, number, number]> = {
-      'MODIS': [0, 0.8, 0],         // Topo central - instrumento principal
-      'ASTER': [0.6, 0, 0.3],       // Lateral direita
-      'MISR': [0, -0.3, 0.6],       // Centro inferior frontal
-      'MOPITT': [-0.6, -0.3, 0.3],  // Lateral esquerda inferior
-      'CERES': [-0.6, -0.5, 0],     // Canto inferior esquerdo
+      'MODIS': [-0.2, -0.1, 0.15],     // Topo central - instrumento principal
+      'ASTER': [0.2, 0.1, 0.15],    // Lateral direita
+      'MISR': [0, -0.15, 0.2],      // Centro inferior frontal
+      'MOPITT': [0, 0.25, 0.15], // Lateral esquerda inferior
+      'CERES': [-0.2, -0.15, 0.1],  // Canto inferior esquerdo
     };
 
     // Função para converter coordenadas 3D em 2D
@@ -257,18 +257,18 @@ export const SatellitePage = () => {
     if (!apiRef.current) return;
 
     const instrument3DPositions: Record<string, [number, number, number]> = {
-      'MODIS': [0, 1.5, -0.5],
-      'ASTER': [0.8, -0.3, 0],
-      'MISR': [0, -0.5, 0.5],
-      'MOPITT': [-0.8, -0.5, 0],
-      'CERES': [-0.8, -0.8, -0.3],
+      'MODIS': [0, 0.25, 0.15],     // Top central
+      'ASTER': [0.2, 0.1, 0.15],    // Right side
+      'MISR': [0, -0.15, 0.2],      // Bottom center
+      'MOPITT': [-0.2, -0.1, 0.15], // Left side
+      'CERES': [-0.2, -0.15, 0.1],  // Bottom left
     };
 
     const position = instrument3DPositions[instrumentId];
     if (position) {
       // Calcular posição da câmera (visualização de baixo do satélite)
-      // Câmera posicionada abaixo olhando para cima
-      const cameraPosition = [position[0] * 1.5, position[1] - 2, position[2] + 2];
+      // Câmera posicionada numa distância confortável
+      const cameraPosition = [position[0] * -4, position[1] * -4, position[2] - 8];
       
       apiRef.current.setCameraLookAt(
         cameraPosition,
@@ -472,16 +472,7 @@ export const SatellitePage = () => {
 
         {/* Debug Mode Controls */}
         <div className="fixed top-4 left-4 z-[10001] flex flex-col gap-2">
-          <button
-            onClick={() => setDebugMode(!debugMode)}
-            className={`px-4 py-2 rounded-lg backdrop-blur-sm border transition-all duration-300 font-spartan text-sm ${
-              debugMode
-                ? 'bg-green-500/80 border-green-400 text-white'
-                : 'bg-black/80 border-white/20 text-white/60 hover:text-white'
-            }`}
-          >
-            {debugMode ? '🔍 Debug ON' : '🔍 Debug OFF'}
-          </button>
+          
           
           {clickedCoordinates && debugMode && (
             <div className="bg-black/90 backdrop-blur-sm border border-green-400 rounded-lg p-3 max-w-xs">

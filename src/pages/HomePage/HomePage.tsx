@@ -1,25 +1,37 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SplitText } from '@atoms/SplitText';
 import { ScrollButton } from '@atoms/ScrollButton';
 import { ServiceWorkerStatus } from '@atoms/ServiceWorkerStatus';
 import { useSnapScroll, useIntersectionObserver } from '@/hooks';
 
 import backgroundHome from '../../assets/images/background_home.jpg';
+
+interface HomePageProps {
+  onStartExperience: () => void;
+}
+
 /**
  * HomePage - Página principal com Tailwind
  * Storytelling: Terra como "médico" examinando a saúde do planeta
  */
 
-export const HomePage = () => {
+export const HomePage = ({ onStartExperience }: HomePageProps) => {
   const navigate = useNavigate();
   const adventureSectionRef = useRef<HTMLDivElement>(null);
+  const [experienceStarted, setExperienceStarted] = useState(false);
 
   // Ativa o scroll snap e bloqueia o scroll livre
   useSnapScroll({ preventScroll: true });
   
   // Detecta quando a seção de aventura está visível
   const isAdventureSectionVisible = useIntersectionObserver(adventureSectionRef, 0.6);
+
+  const handleStartExperience = () => {
+    setExperienceStarted(true);
+    onStartExperience();
+  };
 
   const scrollToAdventure = () => {
     adventureSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,24 +60,77 @@ export const HomePage = () => {
         {/* Content */}
         <div className="relative flex min-h-screen items-center justify-center">
           <main className="w-full">
-            <div className="animate-fade-in mx-auto max-w-3xl px-4">
+            <div className="mx-auto max-w-3xl px-4">
               <div className="text-center space-y-6">
-                <h1 className="font-spartan tracking-[1rem] text-7xl font-bold text-white drop-shadow-lg">
-                  <SplitText delay={0.2} stagger={0.08}>
-                    A.T.L.A.S.
-                  </SplitText>
-                </h1>
-                <p className="font-poppins text-xl text-white/95 font-light tracking-wide max-w-2xl mx-auto">
-                  <SplitText delay={1.2} stagger={0.02} duration={0.4}>
-                    Assessment of Terra's Legacy & Atmospheric Signs
-                  </SplitText>
-                </p>
+                {/* Start Button - Mostra antes de iniciar */}
+                <AnimatePresence>
+                  {!experienceStarted && (
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0, transition: { duration: 0.5 } }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                      className="flex items-center justify-center min-h-[50vh]"
+                    >
+                      <button
+                        onClick={handleStartExperience}
+                        className="group relative px-12 py-6 bg-white/10 hover:bg-white/20 backdrop-blur-md border-2 border-white/30 hover:border-white/50 rounded-2xl transition-all duration-300 hover:scale-105 shadow-2xl"
+                      >
+                        <span className="text-white font-spartan font-bold text-2xl tracking-widest">
+                          START EXPERIENCE
+                        </span>
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Título e Subtítulo - Aparece após clicar */}
+                <AnimatePresence>
+                  {experienceStarted && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: 0.3 }}
+                    >
+                      <motion.h1 
+                        className="font-spartan tracking-[1rem] text-7xl font-bold text-white drop-shadow-lg"
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.5 }}
+                      >
+                        <SplitText delay={0.7} stagger={0.08}>
+                          A.T.L.A.S.
+                        </SplitText>
+                      </motion.h1>
+                      <motion.p 
+                        className="font-poppins text-xl text-white/95 font-light tracking-wide max-w-2xl mx-auto"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 1.8 }}
+                      >
+                        <SplitText delay={1.9} stagger={0.02} duration={0.4}>
+                          Assessment of Terra's Legacy & Atmospheric Signs
+                        </SplitText>
+                      </motion.p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              {/* Scroll Button */}
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-                <ScrollButton onClick={scrollToAdventure} />
-              </div>
+              {/* Scroll Button - Aparece apenas após iniciar */}
+              <AnimatePresence>
+                {experienceStarted && (
+                  <motion.div 
+                    className="absolute bottom-8 left-1/2 -translate-x-1/2"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 2.5 }}
+                  >
+                    <ScrollButton onClick={scrollToAdventure} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </main>
         </div>

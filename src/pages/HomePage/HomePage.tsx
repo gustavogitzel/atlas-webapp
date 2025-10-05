@@ -5,7 +5,8 @@ import { AdventureSection } from '@organisms/AdventureSection';
 import { useSnapScroll, useIntersectionObserver, useParallax } from '@/hooks';
 import { useImagePreloader } from '@/hooks/useImagePreloader';
 import { useFirePoints } from '@/hooks/useFireData';
-import { getLayerUrl } from '@/config/globeLayers';
+import { getLayerUrl, GLOBE_LAYERS } from '@/config/globeLayers';
+import { composeGlobeTexture } from '@/utils/textureComposer';
 import type { MediaItem } from '@molecules/MediaGrid';
 
 import backgroundHome from '../../assets/images/background_home.jpg';
@@ -47,10 +48,8 @@ export const HomePage = () => {
     const dates = [...new Set(fireData.features.map((f) => f.properties.acq_date))].sort();
     const allUrls: string[] = [];
     
-    // Import GLOBE_LAYERS to get all available layers
-    const { GLOBE_LAYERS } = require('@/config/globeLayers');
-    
-    GLOBE_LAYERS.forEach((layer: any) => {
+    // Use imported GLOBE_LAYERS
+    GLOBE_LAYERS.forEach((layer) => {
       // Skip earth-grey as it's a local asset
       if (layer.id === 'earth-grey') return;
       
@@ -97,10 +96,7 @@ export const HomePage = () => {
     imageUrls,
     10,
     overlayUrls.length > 0 ? overlayUrls : undefined,
-    (base, overlay) => {
-      const { composeGlobeTexture } = require('@/utils/textureComposer');
-      return composeGlobeTexture(base, overlay, 0.3);
-    }
+    overlayUrls.length > 0 ? (base, overlay) => composeGlobeTexture(base, overlay, 0.3) : undefined
   );
   
   // Ativa o scroll snap

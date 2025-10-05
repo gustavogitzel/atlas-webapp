@@ -1,23 +1,45 @@
 # 🛰️ Guia de Debug do Satélite Terra - Ajuste de Coordenadas 3D
 
 ## 🎯 Objetivo
-Este guia explica como usar o **Modo Debug** para ajustar com precisão as posições 3D dos instrumentos do satélite Terra no modelo Sketchfab.
+Este guia explica como usar o **Satellite Debugger** - uma ferramenta visual interativa para ajustar com precisão as posições 3D dos instrumentos do satélite Terra no modelo Sketchfab.
 
-## 🔧 Como Usar o Modo Debug
+## 🔧 Como Usar o Satellite Debugger
 
-### Passo 1: Ativar o Modo Debug
+### Passo 1: Ativar o Debugger
 1. Acesse a página `/satellite`
-2. No canto superior esquerdo, clique no botão **"🔍 Debug OFF"**
-3. O botão ficará verde: **"🔍 Debug ON"**
+2. No canto superior esquerdo, clique no botão **"🔍 Enable Debug"**
+3. O botão ficará verde e pulsante: **"🔍 DEBUG MODE ON"**
+4. Um painel completo de debug aparecerá automaticamente
 
-### Passo 2: Capturar Coordenadas 3D
+### Passo 2: Entender o Painel de Debug
+O debugger mostra 3 seções principais:
+
+#### 📹 Camera Info (Amarelo)
+- **Position**: Posição atual da câmera no espaço 3D
+- **Target**: Ponto para onde a câmera está olhando
+- **Botão "Copy Camera Data"**: Copia ambas as coordenadas
+
+#### 📍 Clicked 3D Position (Verde)
+- Mostra as coordenadas exatas do último clique no modelo
+- Código pronto para copiar no formato: `'INSTRUMENT': [x, y, z],`
+- Botão "Copy Instrument Code" para copiar rapidamente
+
+#### ⚡ Quick Actions (Azul/Roxo)
+- **Log Camera**: Imprime informações da câmera no console
+- **Reset All**: Limpa todas as coordenadas capturadas
+
+### Passo 3: Capturar Coordenadas 3D
 1. Com o Debug Mode ativo, **clique** em qualquer parte do modelo 3D do satélite
-2. Um painel verde aparecerá mostrando as coordenadas 3D exatas do ponto clicado:
+2. As coordenadas aparecerão instantaneamente no painel verde:
    ```
-   📍 Clicked Position:
-   [0.45, -0.23, 0.67]
+   📍 CLICKED 3D POSITION:
+   [0.450, -0.230, 0.670]
    ```
-3. Use a referência visual da **imagem NASA Terra** para identificar onde cada instrumento está localizado
+3. O código estará pronto para copiar:
+   ```
+   'INSTRUMENT': [0.450, -0.230, 0.670],
+   ```
+4. Use a referência visual da **imagem NASA Terra** para identificar onde cada instrumento está localizado
 
 ### Passo 3: Copiar e Aplicar Coordenadas
 1. Clique no botão **"📋 Copy Code"** no painel de debug

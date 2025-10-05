@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Flame, AlertTriangle, HelpCircle } from 'lucide-react';
+import { Flame, AlertTriangle, HelpCircle, MapPin, ExternalLink, Newspaper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatBadge } from '@atoms/StatBadge';
 import { Tooltip } from '@atoms/Tooltip';
@@ -18,11 +18,17 @@ export interface FireStatsData {
   maxFRP: number;
   avgConfidence: number;
   highConfidenceCount: number;
+  // Optional location data for links
+  latitude?: number;
+  longitude?: number;
+  date?: string;
+  location?: string;
 }
 
 export interface FireStatsProps {
   data: FireStatsData;
   className?: string;
+  showLinks?: boolean; // Show external links section
 }
 
 const riskVariants = {
@@ -39,7 +45,7 @@ const riskColors = {
   Low: 'text-green-400',
 };
 
-export const FireStats = ({ data, className }: FireStatsProps) => {
+export const FireStats = ({ data, className, showLinks = false }: FireStatsProps) => {
   const {
     totalDetections,
     riskLevel,
@@ -48,6 +54,10 @@ export const FireStats = ({ data, className }: FireStatsProps) => {
     maxFRP,
     avgConfidence,
     highConfidenceCount,
+    latitude,
+    longitude,
+    date,
+    location,
   } = data;
 
   const riskMessage =
@@ -123,6 +133,74 @@ export const FireStats = ({ data, className }: FireStatsProps) => {
           className="min-w-0"
         />
       </div>
+
+      {/* External Links Section */}
+      {showLinks && latitude && longitude && (
+        <>
+          <div className="border-t border-white/10 pt-3">
+            <div className="flex items-center gap-1 mb-2">
+              <MapPin className="h-2.5 w-2.5 text-blue-500 flex-shrink-0" />
+              <h4 className="text-xs font-bold text-white">Location & Resources</h4>
+            </div>
+            <div className="space-y-1">
+              <a
+                href={`https://www.google.com/maps/@${latitude},${longitude},12z`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2 rounded bg-black/30 hover:bg-black/50 transition-colors group"
+              >
+                <span className="text-xs text-gray-300 group-hover:text-white">Google Maps</span>
+                <ExternalLink className="h-3 w-3 text-gray-500 group-hover:text-blue-400" />
+              </a>
+              <a
+                href={`https://earth.google.com/web/@${latitude},${longitude},1000a,1000d,35y,0h,0t,0r`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2 rounded bg-black/30 hover:bg-black/50 transition-colors group"
+              >
+                <span className="text-xs text-gray-300 group-hover:text-white">Google Earth</span>
+                <ExternalLink className="h-3 w-3 text-gray-500 group-hover:text-green-400" />
+              </a>
+              <a
+                href={`https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@${longitude},${latitude},13z`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2 rounded bg-black/30 hover:bg-black/50 transition-colors group"
+              >
+                <span className="text-xs text-gray-300 group-hover:text-white">NASA FIRMS</span>
+                <ExternalLink className="h-3 w-3 text-gray-500 group-hover:text-orange-400" />
+              </a>
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-3">
+            <div className="flex items-center gap-1 mb-2">
+              <Newspaper className="h-2.5 w-2.5 text-purple-500 flex-shrink-0" />
+              <h4 className="text-xs font-bold text-white">News & Data</h4>
+            </div>
+            <div className="space-y-1">
+              <a
+                href={`https://www.globalforestwatch.org/map/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2 rounded bg-black/30 hover:bg-black/50 transition-colors group"
+              >
+                <span className="text-xs text-gray-300 group-hover:text-white">Global Forest Watch</span>
+                <ExternalLink className="h-3 w-3 text-gray-500 group-hover:text-green-400" />
+              </a>
+              <a
+                href={`https://news.google.com/search?q=wildfire+fire+${location || 'region'}+${date || ''}&hl=en-US&gl=US&ceid=US:en`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2 rounded bg-black/30 hover:bg-black/50 transition-colors group"
+              >
+                <span className="text-xs text-gray-300 group-hover:text-white">Google News</span>
+                <ExternalLink className="h-3 w-3 text-gray-500 group-hover:text-blue-400" />
+              </a>
+            </div>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 };

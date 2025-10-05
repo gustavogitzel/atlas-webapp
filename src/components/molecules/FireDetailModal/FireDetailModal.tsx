@@ -33,12 +33,6 @@ export const FireDetailModal = ({ isOpen, onClose, data }: FireDetailModalProps)
   const googleMapsUrl = `https://www.google.com/maps/@${lat},${lon},12z`;
   const googleEarthUrl = `https://earth.google.com/web/@${lat},${lon},1000a,1000d,35y,0h,0t,0r`;
   const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`;
-  
-  // NASA GIBS imagery for the fire date (MODIS Thermal Anomalies)
-  const gibsFireImageUrl = `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&layers=MODIS_Terra_Thermal_Anomalies_All&version=1.3.0&crs=EPSG:4326&transparent=true&width=600&height=400&bbox=${lat-0.5},${lon-0.5},${lat+0.5},${lon+0.5}&format=image/png&time=${acq_date}`;
-  
-  // FIRMS fire map URL
-  const firmsMapUrl = `https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@${lon},${lat},13z`;
 
   return (
     <AnimatePresence>
@@ -103,85 +97,6 @@ export const FireDetailModal = ({ isOpen, onClose, data }: FireDetailModalProps)
                 {frp <= 50 && frp > 20 && 'Moderate fire activity detected.'}
                 {frp <= 20 && 'Low intensity fire detected.'}
               </p>
-            </div>
-
-            {/* Satellite Imagery */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
-                <MapPin className="h-5 w-5 text-purple-500" />
-                Satellite Imagery
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* NASA GIBS Fire Detection */}
-                <div className="rounded-lg border border-white/20 bg-black/50 overflow-hidden">
-                  <div className="aspect-video relative bg-gray-900">
-                    <img
-                      src={gibsFireImageUrl}
-                      alt="NASA Fire Detection"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback to Google Images search for wildfire in the region
-                        const searchQuery = `wildfire+fire+${lat.toFixed(1)}+${lon.toFixed(1)}+${acq_date}`;
-                        e.currentTarget.src = `https://source.unsplash.com/600x400/?wildfire,forest-fire,smoke`;
-                        e.currentTarget.onclick = () => window.open(`https://www.google.com/search?q=${searchQuery}&tbm=isch`, '_blank');
-                        e.currentTarget.style.cursor = 'pointer';
-                      }}
-                    />
-                    <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
-                      NASA MODIS Thermal
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <p className="text-xs text-gray-400">Thermal anomalies detected on {acq_date}</p>
-                  </div>
-                </div>
-
-                {/* Google Images Search */}
-                <a
-                  href={`https://www.google.com/search?q=wildfire+fire+${lat.toFixed(2)}+${lon.toFixed(2)}+${acq_date}&tbm=isch`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-lg border border-white/20 bg-black/50 overflow-hidden hover:border-blue-500/50 transition-colors group"
-                >
-                  <div className="aspect-video relative bg-gray-900">
-                    <img
-                      src={`https://source.unsplash.com/600x400/?wildfire,forest,fire,smoke`}
-                      alt="Wildfire Images"
-                      className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
-                      <div>
-                        <p className="text-sm text-white font-semibold mb-1">Search Images</p>
-                        <p className="text-xs text-gray-300">View photos from this region</p>
-                      </div>
-                    </div>
-                    <ExternalLink className="absolute top-2 right-2 h-4 w-4 text-white group-hover:text-blue-400 transition-colors" />
-                  </div>
-                  <div className="p-3">
-                    <p className="text-xs text-gray-400">Click to search wildfire images on Google</p>
-                  </div>
-                </a>
-
-                {/* FIRMS Interactive Map */}
-                <a
-                  href={firmsMapUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-lg border border-white/20 bg-black/50 overflow-hidden hover:border-orange-500/50 transition-colors group"
-                >
-                  <div className="aspect-video relative bg-gray-900 flex items-center justify-center">
-                    <div className="text-center p-4">
-                      <Flame className="h-12 w-12 text-orange-500 mx-auto mb-2" />
-                      <p className="text-sm text-white font-semibold mb-1">Interactive Fire Map</p>
-                      <p className="text-xs text-gray-400">Click to view in FIRMS</p>
-                    </div>
-                    <ExternalLink className="absolute top-2 right-2 h-4 w-4 text-gray-400 group-hover:text-orange-400 transition-colors" />
-                  </div>
-                  <div className="p-3">
-                    <p className="text-xs text-gray-400">Real-time fire monitoring and historical data</p>
-                  </div>
-                </a>
-              </div>
             </div>
 
             {/* Metrics Grid */}

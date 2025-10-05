@@ -20,6 +20,7 @@ import { createFireGlobeTour } from '@/data/fireGlobeTour';
 import { getLayerUrl, getDefaultLayer, GLOBE_LAYERS } from '@/config/globeLayers';
 import { composeGlobeTexture } from '@/utils/textureComposer';
 import satelliteImage from '@/assets/images/satellite.png';
+import earthGreyImage from '@/assets/images/earth-grey.jpg';
 import type { FireFeature } from '@/types/fire';
 
 /**
@@ -61,8 +62,8 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   // Visualization mode
   const [visualizationMode, setVisualizationMode] = useState<'points' | 'heatmap'>('points');
   
-  // Base layer selection - Default to Terra True Color
-  const [selectedLayerId, setSelectedLayerId] = useState('terra-truecolor');
+  // Base layer selection - Default to Earth Grey
+  const [selectedLayerId, setSelectedLayerId] = useState('earth-grey');
   
   // Aerosol overlay layer
   const [showAerosolLayer, setShowAerosolLayer] = useState(true);
@@ -145,17 +146,24 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     return current;
   }, [uniqueDates, currentDateIndex, currentGIBSDate]);
 
-  // Generate all possible image URLs for preloading
+  // Generate all possible image URLs for preloading (all layers + all dates)
   const imageUrls = useMemo(() => {
     if (!uniqueDates.length) return [];
     
-    const layer = GLOBE_LAYERS.find((l) => l.id === selectedLayerId) || getDefaultLayer();
+    // Generate URLs for ALL layers (not just selected one)
+    const allUrls: string[] = [];
     
-    // Preload images for all available dates
-    // This enables instant transitions without fade effects
-    // Images are loaded in batches to avoid overwhelming the browser
-    return uniqueDates.map(date => getLayerUrl(layer, date, 1));
-  }, [uniqueDates, selectedLayerId]);
+    GLOBE_LAYERS.forEach(layer => {
+      // Skip earth-grey as it's a local asset
+      if (layer.id === 'earth-grey') return;
+      
+      uniqueDates.forEach(date => {
+        allUrls.push(getLayerUrl(layer, date, 1));
+      });
+    });
+    
+    return allUrls;
+  }, [uniqueDates]);
 
   // Generate overlay URLs for all dates
   const overlayUrls = useMemo(() => {
@@ -194,12 +202,63 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     showAerosolLayer ? (base, overlay) => composeGlobeTexture(base, overlay, 0.3) : undefined
   );
 
-  // Current globe texture URL
-  const [gibsGlobeUrl, setGibsGlobeUrl] = useState('');
+  // Current globe texture URL - start with default earth-grey image with aerosol overlay
+  const [gibsGlobeUrl, setGibsGlobeUrl] = useState(earthGreyImage);
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // Update globe URL when date/layer changes or aerosol is toggled
+  // Cache for earth-grey with and without overlay (for instant toggle)
+  const earthGreyCache = useRef<{
+    withOverlay: string | null;
+    withoutOverlay: string;
+  }>({
+    withOverlay: null,
+    withoutOverlay: earthGreyImage,
+  });
+  
+  // Pre-compose earth-grey with overlay on initial load
+  useEffect(() => {
+    const initializeWithOverlay = async () => {
+      if (!isInitialized && uniqueDates.length > 0 && overlayUrls && overlayUrls.length > 0) {
+        // Pre-compose earth-grey with overlay and cache it
+        const overlayUrl = overlayUrls[0];
+        const composed = await composeGlobeTexture(earthGreyImage, overlayUrl, 0.3);
+        earthGreyCache.current.withOverlay = composed;
+        
+        // Set initial state based on showAerosolLayer
+        if (showAerosolLayer) {
+          setGibsGlobeUrl(composed);
+        } else {
+          setGibsGlobeUrl(earthGreyImage);
+        }
+        
+        setIsInitialized(true);
+      }
+    };
+    
+    initializeWithOverlay();
+  }, [uniqueDates, overlayUrls, isInitialized]);
+  
+  // Update globe URL ONLY when user explicitly changes layer or toggles aerosol
   useEffect(() => {
     const updateTexture = async () => {
+      // Skip if not initialized yet
+      if (!isInitialized) return;
+      
+      // Handle aerosol toggle for earth-grey (INSTANT - uses cache)
+      if (selectedLayerId === 'earth-grey') {
+        if (showAerosolLayer) {
+          // Use cached version with overlay (instant!)
+          if (earthGreyCache.current.withOverlay) {
+            setGibsGlobeUrl(earthGreyCache.current.withOverlay);
+          }
+        } else {
+          // Use cached version without overlay (instant!)
+          setGibsGlobeUrl(earthGreyCache.current.withoutOverlay);
+        }
+        return;
+      }
+      
+      // User selected a different layer
       const layer = GLOBE_LAYERS.find((l) => l.id === selectedLayerId) || getDefaultLayer();
       const baseUrl = getLayerUrl(layer, displayDate, globeZoom);
       
@@ -217,13 +276,13 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
           setGibsGlobeUrl(composed);
         }
       } else {
-        // No aerosol - use base image only
+        // User turned off aerosol - show layer without overlay
         setGibsGlobeUrl(baseUrl);
       }
     };
     
     updateTexture();
-  }, [displayDate, selectedLayerId, globeZoom, showAerosolLayer, getComposedUrl, overlayUrls, uniqueDates]);
+  }, [selectedLayerId, showAerosolLayer, isInitialized, overlayUrls, getComposedUrl, displayDate, globeZoom, uniqueDates]);
 
   console.log('Globe URL:', gibsGlobeUrl, 'Date:', displayDate, 'Zoom:', globeZoom);
 

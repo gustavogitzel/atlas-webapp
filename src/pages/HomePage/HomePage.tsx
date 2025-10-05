@@ -5,7 +5,7 @@ import { AdventureSection } from '@organisms/AdventureSection';
 import { useSnapScroll, useIntersectionObserver, useParallax } from '@/hooks';
 import { useImagePreloader } from '@/hooks/useImagePreloader';
 import { useFirePoints } from '@/hooks/useFireData';
-import { getLayerUrl, getDefaultLayer } from '@/config/globeLayers';
+import { getLayerUrl } from '@/config/globeLayers';
 import type { MediaItem } from '@molecules/MediaGrid';
 
 import backgroundHome from '../../assets/images/background_home.jpg';
@@ -40,22 +40,67 @@ export const HomePage = () => {
   // Preload fire data and images in background
   const { data: fireData } = useFirePoints({ maxPoints: 10000, minConfidence: 0 });
   
-  // Generate image URLs for preloading
+  // Generate image URLs for preloading (ALL layers + ALL dates)
   const imageUrls = useMemo(() => {
     if (!fireData?.features) return [];
     
     const dates = [...new Set(fireData.features.map((f) => f.properties.acq_date))].sort();
-    const layer = getDefaultLayer();
+    const allUrls: string[] = [];
     
-    return dates.map(date => getLayerUrl(layer, date, 1));
+    // Import GLOBE_LAYERS to get all available layers
+    const { GLOBE_LAYERS } = require('@/config/globeLayers');
+    
+    GLOBE_LAYERS.forEach((layer: any) => {
+      // Skip earth-grey as it's a local asset
+      if (layer.id === 'earth-grey') return;
+      
+      dates.forEach(date => {
+        allUrls.push(getLayerUrl(layer, date, 1));
+      });
+    });
+    
+    return allUrls;
   }, [fireData]);
   
-  // Start preloading images in background
+  // Generate aerosol overlay URLs for all dates
+  const overlayUrls = useMemo(() => {
+    if (!fireData?.features) return [];
+    
+    const dates = [...new Set(fireData.features.map((f) => f.properties.acq_date))].sort();
+    
+    return dates.map(dateStr => {
+      const date = new Date(dateStr);
+      const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      const formattedDate = lastDay.toISOString().split('T')[0];
+      
+      const baseUrl = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
+      const params = new URLSearchParams({
+        SERVICE: 'WMS',
+        REQUEST: 'GetMap',
+        layers: 'MISR_Aerosol_Optical_Depth_Avg_Green_Monthly',
+        version: '1.3.0',
+        crs: 'EPSG:4326',
+        transparent: 'true',
+        width: '2048',
+        height: '1024',
+        bbox: '-90,-180,90,180',
+        format: 'image/png',
+        time: formattedDate
+      });
+      
+      return `${baseUrl}?${params.toString()}`;
+    });
+  }, [fireData]);
+  
+  // Preload images with aerosol composition (all combinations)
   const { isLoading: imagesLoading, progress: imageProgress } = useImagePreloader(
     imageUrls,
     10,
-    undefined,
-    undefined
+    overlayUrls.length > 0 ? overlayUrls : undefined,
+    (base, overlay) => {
+      const { composeGlobeTexture } = require('@/utils/textureComposer');
+      return composeGlobeTexture(base, overlay, 0.3);
+    }
   );
   
   // Ativa o scroll snap

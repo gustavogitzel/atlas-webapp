@@ -1,0 +1,9 @@
+# Ignore actual music files (they can be large)
+*.mp3
+*.ogg
+*.wav
+*.m4a
+
+# Keep the README and scripts
+!README.md
+!*.sh

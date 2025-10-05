@@ -3,14 +3,8 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import { SatellitePage } from './pages/SatelitePage/SatellitePage';
 import { FireGlobePage } from './pages/FireGlobePage';
 import { FloodGlobePage } from './pages/FloodGlobePage';
-import { lazy, Suspense } from 'react';
-
-// Lazy load the background music component
-const BackgroundMusic = lazy(() => 
-  import('./components/molecules/BackgroundMusic').then(module => ({
-    default: module.BackgroundMusic
-  }))
-);
+import { BackgroundMusic } from './components/molecules/BackgroundMusic';
+import musicFile from './assets/audios/music.mp3';
 
 /**
  * App Component
@@ -29,10 +23,8 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       
-      {/* Global Background Music - Lazy loaded */}
-      <Suspense fallback={null}>
-        <BackgroundMusic />
-      </Suspense>
+      {/* Global Background Music - Loads immediately */}
+      <BackgroundMusic audioSrc={musicFile} />
     </div>
   );
 }

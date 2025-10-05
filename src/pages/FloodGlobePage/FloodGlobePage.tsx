@@ -5,9 +5,13 @@ import { IconButton } from '@atoms/IconButton';
 import { LoadingScreen } from '@molecules/LoadingScreen';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { GuidedTour } from '@organisms/GuidedTour';
+import { ImageComparisonModal } from '@molecules/ImageComparisonModal';
 import { useImagePreloader } from '@/hooks/useImagePreloader';
 import { createFloodGlobeTour } from '@/data/floodGlobeTour';
 import satelliteImage from '@/assets/images/satellite.png';
+import beforeFloodImage from '@/assets/images/2023-esquerda.jpg';
+import afterFloodImage from '@/assets/images/2024-direita.jpg';
+import flood2dayImage from '@/assets/images/flood2day.jpg';
 
 /**
  * FloodGlobePage - Visualização de enchentes no Brasil
@@ -178,10 +182,12 @@ const FLOOD_INFO = {
 
 export const FloodGlobePage = () => {
   const globeRef = useRef<any>(null);
+  const comparisonShownRef = useRef(false);
   const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
   const [selectedBaseLayer, setSelectedBaseLayer] = useState('terrain-relief');
   const [showInfo, setShowInfo] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
   const [globeTexture, setGlobeTexture] = useState(() => getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', 1, false, 'image/jpeg'));
   const [globeZoom, setGlobeZoom] = useState(1);
   
@@ -384,9 +390,8 @@ export const FloodGlobePage = () => {
               layerName = 'MODIS_Terra_Cloud_Water_Path';
               layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
             } else if (layerId === 'flood-2day') {
-              // WMS URL for Flood 2-Day (only on 15-MAY-2024)
-              layerName = 'MODIS_Combined_Flood_2-Day';
-              layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
+              // Use local high-resolution flood image
+              layerUrl = flood2dayImage;
             } else {
               continue;
             }
@@ -567,8 +572,8 @@ export const FloodGlobePage = () => {
         </div>
       )}
 
-      {/* Layer Controls */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+      {/* Layer Controls - Horizontal Layout */}
+      <div className="absolute top-4 right-20 z-10 flex gap-2">
         {/* Base Layer Selection - Collapsible */}
         <div className="w-auto md:w-64">
           <div className="relative">
@@ -688,22 +693,22 @@ export const FloodGlobePage = () => {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Control Buttons */}
-        <div className="flex gap-2">
-          <IconButton
-            icon={<Info />}
-            onClick={() => setShowInfo(!showInfo)}
-            variant={showInfo ? "default" : "outline"}
-            title="Flood Information"
-          />
-          <IconButton
-            icon={<HelpCircle />}
-            onClick={() => setShowTour(true)}
-            variant="default"
-            title="Start Guided Tour"
-          />
-        </div>
+      {/* Control Buttons - Vertical Column on Right */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <IconButton
+          icon={<Info />}
+          onClick={() => setShowInfo(!showInfo)}
+          variant={showInfo ? "default" : "outline"}
+          title="Flood Information"
+        />
+        <IconButton
+          icon={<HelpCircle />}
+          onClick={() => setShowTour(true)}
+          variant="default"
+          title="Start Guided Tour"
+        />
       </div>
 
       {/* Globe */}
@@ -734,11 +739,12 @@ export const FloodGlobePage = () => {
       />
 
       {/* Timeline Controls */}
-      <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end">
+      <div className={`absolute left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end ${showTour ? 'bottom-32' : 'bottom-4'}`}>
         <TimelineControls
           currentDate={currentDate}
           currentIndex={currentDateIndex}
           totalDates={uniqueDates.length}
+          isTourActive={showTour}
           currentCount={0}
           isPlaying={isPlaying}
           playbackSpeed={1000}
@@ -766,7 +772,36 @@ export const FloodGlobePage = () => {
         isOpen={showTour}
         onClose={() => setShowTour(false)}
         characterImage={satelliteImage}
-        onComplete={() => setShowTour(false)}
+        onComplete={() => {
+          setShowTour(false);
+          comparisonShownRef.current = false;
+        }}
+        onStepChange={(stepIndex: number) => {
+          console.log('Step changed:', stepIndex, tourSteps[stepIndex]?.id, 'comparisonShown:', comparisonShownRef.current);
+          // Open comparison modal on final-message step (only once)
+          if (tourSteps[stepIndex]?.id === 'final-message' && !comparisonShownRef.current) {
+            console.log('Opening comparison modal');
+            setShowComparison(true);
+            comparisonShownRef.current = true;
+          }
+          // Close comparison modal when moving to credits step
+          if (tourSteps[stepIndex]?.id === 'credits') {
+            console.log('Closing comparison modal for credits');
+            setShowComparison(false);
+          }
+        }}
+      />
+
+      {/* Image Comparison Modal */}
+      <ImageComparisonModal
+        isOpen={showComparison}
+        onClose={() => setShowComparison(false)}
+        beforeImage={afterFloodImage}
+        afterImage={beforeFloodImage}
+        beforeLabel="2023"
+        afterLabel="2024"
+        title="Rio Grande do Sul Flooding - Before & After"
+        description="Drag the slider left and right to compare satellite images"
       />
     </div>
   );

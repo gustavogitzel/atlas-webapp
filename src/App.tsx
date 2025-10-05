@@ -6,6 +6,8 @@ import { FireGlobePage } from './pages/FireGlobePage';
 import { FloodGlobePage } from './pages/FloodGlobePage';
 import { BackgroundMusic } from './components/molecules/BackgroundMusic';
 import musicFile from './assets/audios/music.mp3';
+import {InteractiveGlobePage} from "@pages/InteractiveGlobePage";
+import {CreditsPage} from "@pages/CreditsPage";
 
 /**
  * App Component
@@ -30,10 +32,12 @@ function App() {
         <Route path="/satellite" element={<SatellitePage />} />
         <Route path="/fire-globe" element={<FireGlobePage />} />
         <Route path="/flood-globe" element={<FloodGlobePage />} />
+        <Route path="/interactive-globe" element={<InteractiveGlobePage />} />
+        <Route path="/credits" element={<CreditsPage />} />
         {/* Fallback - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      
+
       {/* Global Background Music - Controlled by user */}
       <BackgroundMusic audioSrc={musicFile} shouldPlay={musicStarted} />
     </div>

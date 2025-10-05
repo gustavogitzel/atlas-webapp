@@ -79,7 +79,8 @@ export const FilterPanel = ({
               max="100"
               value={minConfidence}
               onChange={(e) => onConfidenceChange(parseInt(e.target.value))}
-              className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+              style={{ accentColor: '#5833A6' }}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>0%</span>

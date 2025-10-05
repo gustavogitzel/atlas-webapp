@@ -30,17 +30,15 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        // Setup: 19-APR-2024, Terrain Relief, No overlays
         setSelectedBaseLayer('terrain-relief');
         setSelectedLayers([]);
         setCurrentDateIndex(findDateIndex('2024-04-19'));
         
-        // Position camera on South America (Andes view)
         if (globeRef.current) {
           globeRef.current.pointOfView({
             lat: -20.4234,
             lng: -59.3575,
-            altitude: 2.0, // Zoom to see all of South America
+            altitude: 2.0,
           }, 2000);
         }
       },
@@ -54,12 +52,21 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        // Turn on Cloud Water Path overlay
         setSelectedLayers(['cloud-water-path']);
       },
     },
 
-    // Step 3: Evolution to 28-APR-2024
+    // Evolution: 19-APR to 28-APR-2024 (auto-progress)
+    { id: 'evo-apr20', title: '🛰️ Terra Satellite', description: "The atmospheric river flows...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-20')) },
+    { id: 'evo-apr21', title: '🛰️ Terra Satellite', description: "Moisture accumulates...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-21')) },
+    { id: 'evo-apr22', title: '🛰️ Terra Satellite', description: "Day by day...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-22')) },
+    { id: 'evo-apr23', title: '🛰️ Terra Satellite', description: "The pattern continues...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-23')) },
+    { id: 'evo-apr24', title: '🛰️ Terra Satellite', description: "Water vapor flows...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-24')) },
+    { id: 'evo-apr25', title: '🛰️ Terra Satellite', description: "Building up...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-25')) },
+    { id: 'evo-apr26', title: '🛰️ Terra Satellite', description: "Approaching the region...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-26')) },
+    { id: 'evo-apr27', title: '🛰️ Terra Satellite', description: "Almost there...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-27')) },
+
+    // Step 3: 28-APR-2024 - Focus on Rio Grande do Sul
     {
       id: 'rain-evolution',
       title: '🛰️ Terra Satellite',
@@ -67,21 +74,37 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        // Jump to 28-APR-2024 and focus on Rio Grande do Sul
         setCurrentDateIndex(findDateIndex('2024-04-28'));
         
-        // Zoom to Rio Grande do Sul
         if (globeRef.current) {
           globeRef.current.pointOfView({
             lat: -29.6898,
             lng: -53.1485,
-            altitude: 1.2, // Closer zoom on Rio Grande do Sul
+            altitude: 1.2,
           }, 2000);
         }
       },
     },
 
-    // Step 4: Evolution to 15-MAY-2024
+    // Evolution: 28-APR to 15-MAY-2024 (auto-progress)
+    { id: 'evo-apr29', title: '🛰️ Terra Satellite', description: "Rain continues...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-04-29')) },
+    { id: 'evo-apr30', title: '🛰️ Terra Satellite', description: "Day after day...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-04-30')) },
+    { id: 'evo-may01', title: '🛰️ Terra Satellite', description: "May begins...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-01')) },
+    { id: 'evo-may02', title: '🛰️ Terra Satellite', description: "Still raining...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-02')) },
+    { id: 'evo-may03', title: '🛰️ Terra Satellite', description: "Relentless...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-03')) },
+    { id: 'evo-may04', title: '🛰️ Terra Satellite', description: "No end in sight...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-04')) },
+    { id: 'evo-may05', title: '🛰️ Terra Satellite', description: "Water accumulates...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-05')) },
+    { id: 'evo-may06', title: '🛰️ Terra Satellite', description: "Rivers rising...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-06')) },
+    { id: 'evo-may07', title: '🛰️ Terra Satellite', description: "Week continues...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-07')) },
+    { id: 'evo-may08', title: '🛰️ Terra Satellite', description: "Still pouring...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-08')) },
+    { id: 'evo-may09', title: '🛰️ Terra Satellite', description: "Ongoing...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-09')) },
+    { id: 'evo-may10', title: '🛰️ Terra Satellite', description: "Mid-May...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-10')) },
+    { id: 'evo-may11', title: '🛰️ Terra Satellite', description: "Continuing...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-11')) },
+    { id: 'evo-may12', title: '🛰️ Terra Satellite', description: "Water everywhere...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-12')) },
+    { id: 'evo-may13', title: '🛰️ Terra Satellite', description: "Almost peak...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-13')) },
+    { id: 'evo-may14', title: '🛰️ Terra Satellite', description: "One more day...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-14')) },
+
+    // Step 4: 15-MAY-2024 - Turn off overlay
     {
       id: 'flood-peak',
       title: '🛰️ Terra Satellite',
@@ -89,14 +112,12 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        // Jump to 15-MAY-2024
         setCurrentDateIndex(findDateIndex('2024-05-15'));
-        // Turn off Cloud Water Path
         setSelectedLayers([]);
       },
     },
 
-    // Step 5: Flood Detection - Turn on Flood 2-Day
+    // Step 5: Flood Detection - Turn on Flood 2-Day with zoom
     {
       id: 'flood-detection',
       title: '🛰️ Terra Satellite',
@@ -104,22 +125,38 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        // Turn on Flood 2-Day overlay (only available on 15-MAY-2024)
         setSelectedLayers(['flood-2day']);
+        
+        // Super zoom on Rio Grande do Sul to see flood details
+        if (globeRef.current) {
+          globeRef.current.pointOfView({
+            lat: -29.6898,
+            lng: -53.1485,
+            altitude: 0.3, // Super close zoom to see flood details
+          }, 2000);
+        }
       },
     },
 
-    // Step 6: Final message
+    // Step 6: Final message with comparison
     {
       id: 'final-message',
       title: '🛰️ Terra Satellite',
-      description: "This is what climate change looks like from space. But seeing is the first step to understanding, and understanding is the first step to action.",
+      description: "This is what climate change looks like from space. But seeing is the first step to understanding, and understanding is the first step to action. Let me show you the before and after...",
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        // Turn off all overlays
         setSelectedLayers([]);
       },
+    },
+
+    // Step 7: Credits
+    {
+      id: 'credits',
+      title: '🌍 Thank You',
+      description: "Thank you for joining me on this journey through space and time. These stories are real, and they matter. Want to learn more about the data and technology behind these visualizations?",
+      showOverlay: true,
+      showSpotlight: false,
     },
   ];
 };

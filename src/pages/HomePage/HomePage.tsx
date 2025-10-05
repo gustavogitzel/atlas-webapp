@@ -9,7 +9,7 @@ import { useSnapScroll, useIntersectionObserver } from '@/hooks';
 import backgroundHome from '../../assets/images/background_home.jpg';
 
 interface HomePageProps {
-  onStartExperience: () => void;
+  onStartExperience?: () => void;
 }
 
 /**
@@ -17,7 +17,7 @@ interface HomePageProps {
  * Storytelling: Terra como "médico" examinando a saúde do planeta
  */
 
-export const HomePage = ({ onStartExperience }: HomePageProps) => {
+export const HomePage = ({ onStartExperience }: HomePageProps = {}) => {
   const navigate = useNavigate();
   const adventureSectionRef = useRef<HTMLDivElement>(null);
   const [experienceStarted, setExperienceStarted] = useState(false);
@@ -30,7 +30,9 @@ export const HomePage = ({ onStartExperience }: HomePageProps) => {
 
   const handleStartExperience = () => {
     setExperienceStarted(true);
-    onStartExperience();
+    if (onStartExperience) {
+      onStartExperience();
+    }
   };
 
   const scrollToAdventure = () => {

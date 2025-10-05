@@ -53,36 +53,40 @@ export const createFireGlobeTour = (
         globeRef.current.pointOfView({
           lat: -5.4326,
           lng: -59.8870,
-          altitude: 1.5, // Closer zoom to focus on Amazon
+          altitude: 1.2, // Closer zoom to focus on Amazon
         }, 2000);
       }
     },
   },
 
-  // Step 2: Evolution to 16-AUG-2004 (smoke appears)
+  // Evolution steps: 22-JUL to 16-AUG-2004 (auto-progress)
+  { id: 'evo-jul27', title: '🛰️ Terra Satellite', description: "Watching the fires spread...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2000, action: () => setCurrentDateIndex(findDateIndex('2004-07-27')) },
+  { id: 'evo-aug01', title: '🛰️ Terra Satellite', description: "Day by day, the smoke grows...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2000, action: () => setCurrentDateIndex(findDateIndex('2004-08-01')) },
+  { id: 'evo-aug06', title: '🛰️ Terra Satellite', description: "The fires intensify...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2000, action: () => setCurrentDateIndex(findDateIndex('2004-08-06')) },
+  { id: 'evo-aug11', title: '🛰️ Terra Satellite', description: "More hotspots appear...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2000, action: () => setCurrentDateIndex(findDateIndex('2004-08-11')) },
+
+  // Step 2: 16-AUG-2004 - Smoke appears
   {
     id: 'smoke-appears',
     title: '🛰️ Terra Satellite',
     description: "Lately, I've seen it struggle to breathe. My MODIS eye reveals these hazy clouds are not rain, but smoke, scarring the green landscape.",
     showOverlay: false,
     showSpotlight: false,
-    action: () => {
-      // Jump to 16-AUG-2004
-      setCurrentDateIndex(findDateIndex('2004-08-16'));
-    },
+    action: () => setCurrentDateIndex(findDateIndex('2004-08-16')),
   },
 
-  // Step 3: Evolution to 31-AUG-2004 (gaps explanation)
+  // Evolution: 16-AUG to 31-AUG-2004
+  { id: 'evo-aug21', title: '🛰️ Terra Satellite', description: "The haze thickens...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2000, action: () => setCurrentDateIndex(findDateIndex('2004-08-21')) },
+  { id: 'evo-aug26', title: '🛰️ Terra Satellite', description: "Smoke blankets the region...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2000, action: () => setCurrentDateIndex(findDateIndex('2004-08-26')) },
+
+  // Step 3: 31-AUG-2004 - Gaps explanation
   {
     id: 'gaps-explanation',
     title: '🛰️ Terra Satellite',
     description: "You might notice gaps in my daily view. As I fly my orbit, I see the world in long strips, like snapshots in time.",
-      showOverlay: false,
+    showOverlay: false,
     showSpotlight: false,
-    action: () => {
-      // Jump to 31-AUG-2004
-      setCurrentDateIndex(findDateIndex('2004-08-31'));
-    },
+    action: () => setCurrentDateIndex(findDateIndex('2004-08-31')),
   },
 
   // Step 4: Fire points focus
@@ -96,17 +100,34 @@ export const createFireGlobeTour = (
     position: 'top',
   },
 
-  // Step 5: Evolution to 04-DEC-2004 (MOPITT introduction)
+  // Evolution: SEP to DEC-2004 (faster progression)
+  { id: 'evo-sep05', title: '🛰️ Terra Satellite', description: "September...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-09-05')) },
+  { id: 'evo-sep10', title: '🛰️ Terra Satellite', description: "Fires persist...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-09-10')) },
+  { id: 'evo-sep15', title: '🛰️ Terra Satellite', description: "Mid-September...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-09-15')) },
+  { id: 'evo-sep20', title: '🛰️ Terra Satellite', description: "Continuing...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-09-20')) },
+  { id: 'evo-sep25', title: '🛰️ Terra Satellite', description: "Late September...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-09-25')) },
+  { id: 'evo-sep30', title: '🛰️ Terra Satellite', description: "Month's end...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-09-30')) },
+  { id: 'evo-oct05', title: '🛰️ Terra Satellite', description: "October...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-10-05')) },
+  { id: 'evo-oct10', title: '🛰️ Terra Satellite', description: "Still burning...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-10-10')) },
+  { id: 'evo-oct15', title: '🛰️ Terra Satellite', description: "Mid-October...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-10-15')) },
+  { id: 'evo-oct20', title: '🛰️ Terra Satellite', description: "Continuing...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-10-20')) },
+  { id: 'evo-oct25', title: '🛰️ Terra Satellite', description: "Late October...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-10-25')) },
+  { id: 'evo-oct30', title: '🛰️ Terra Satellite', description: "Month's end...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-10-30')) },
+  { id: 'evo-nov04', title: '🛰️ Terra Satellite', description: "November...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-11-04')) },
+  { id: 'evo-nov09', title: '🛰️ Terra Satellite', description: "Watching...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-11-09')) },
+  { id: 'evo-nov14', title: '🛰️ Terra Satellite', description: "Mid-November...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-11-14')) },
+  { id: 'evo-nov19', title: '🛰️ Terra Satellite', description: "Fires slow...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-11-19')) },
+  { id: 'evo-nov24', title: '🛰️ Terra Satellite', description: "Late November...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-11-24')) },
+  { id: 'evo-nov29', title: '🛰️ Terra Satellite', description: "Month's end...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2004-11-29')) },
+
+  // Step 5: 04-DEC-2004 - MOPITT introduction
   {
     id: 'mopitt-intro',
     title: '🛰️ Terra Satellite',
     description: "And with my MOPITT 'sniffer', we can see the invisible wound: the pollution left behind in the smoke. Let's turn it on and go back in time.",
-      showOverlay: false,
+    showOverlay: false,
     showSpotlight: false,
-    action: () => {
-      // Jump to 04-DEC-2004
-      setCurrentDateIndex(findDateIndex('2004-12-04'));
-    },
+    action: () => setCurrentDateIndex(findDateIndex('2004-12-04')),
   },
 
   // Step 6: Back to 22-JUL-2004 with CO overlay
@@ -125,63 +146,20 @@ export const createFireGlobeTour = (
     },
   },
 
-  // Step 7: Monthly evolution - 22-AUG-2004
-  {
-    id: 'co-aug',
-    title: '🛰️ Terra Satellite',
-    description: "Watching the carbon monoxide spread across the months...",
-    showOverlay: false,
-    showSpotlight: false,
-    action: () => {
-      setCurrentDateIndex(findDateIndex('2004-08-22'));
-    },
-  },
+  // Monthly CO evolution (auto-progress)
+  { id: 'co-aug', title: '🛰️ Terra Satellite', description: "August pollution...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2500, action: () => setCurrentDateIndex(findDateIndex('2004-08-22')) },
+  { id: 'co-sep', title: '🛰️ Terra Satellite', description: "September pollution...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2500, action: () => setCurrentDateIndex(findDateIndex('2004-09-22')) },
+  { id: 'co-oct', title: '🛰️ Terra Satellite', description: "October pollution...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2500, action: () => setCurrentDateIndex(findDateIndex('2004-10-22')) },
+  { id: 'co-nov', title: '🛰️ Terra Satellite', description: "November pollution...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 2500, action: () => setCurrentDateIndex(findDateIndex('2004-11-22')) },
 
-  // Step 8: Monthly evolution - 22-SEP-2004
-  {
-    id: 'co-sep',
-    title: '🛰️ Terra Satellite',
-    description: "The pollution continues to build...",
-    showOverlay: false,
-    showSpotlight: false,
-    action: () => {
-      setCurrentDateIndex(findDateIndex('2004-09-22'));
-    },
-  },
-
-  // Step 9: Monthly evolution - 22-OCT-2004
-  {
-    id: 'co-oct',
-    title: '🛰️ Terra Satellite',
-    description: "Month after month, the pattern persists...",
-    showOverlay: false,
-    showSpotlight: false,
-    action: () => {
-      setCurrentDateIndex(findDateIndex('2004-10-22'));
-    },
-  },
-
-  // Step 10: Monthly evolution - 22-NOV-2004
-  {
-    id: 'co-nov',
-    title: '🛰️ Terra Satellite',
-    description: "The invisible wound grows...",
-    showOverlay: false,
-    showSpotlight: false,
-    action: () => {
-      setCurrentDateIndex(findDateIndex('2004-11-22'));
-    },
-  },
-  // Step 11: Final - 04-DEC-2004
+  // Step 7: Final - 04-DEC-2004
   {
     id: 'final-message',
     title: '🛰️ Terra Satellite',
     description: "It's a heavy thing to witness... but seeing is the first step to healing.",
     showOverlay: false,
     showSpotlight: false,
-    action: () => {
-      setCurrentDateIndex(findDateIndex('2004-12-04'));
-    },
+    action: () => setCurrentDateIndex(findDateIndex('2004-12-04')),
   },
   
   // Step 12: Next Story - Flood Globe

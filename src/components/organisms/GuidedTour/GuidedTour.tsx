@@ -154,27 +154,31 @@ export const GuidedTour = ({
             ) : null}
           </AnimatePresence>
 
-
-          {/* Character with speech and navigation - Always at bottom */}
+          {/* Character with speech - Always at bottom left */}
           <motion.div
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="fixed left-8 bottom-8 z-[10001] flex items-end gap-4"
+            className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
           >
-            <div className="pointer-events-none">
-              <GuideCharacter
-                imageUrl={characterImage}
-                message={step.description}
-                isActive
-                showMessage
-                avatarSize="lg"
-              />
-            </div>
-            
-            {/* Navigation arrows - Next to character speech bubble (hidden during required interaction) */}
-            {!(step.requiresInteraction && !interactionCompleted) && (
-              <div className="flex flex-row gap-3 mb-12 pointer-events-auto">
+            <GuideCharacter
+              imageUrl={characterImage}
+              message={step.description}
+              isActive
+              showMessage
+              avatarSize="lg"
+            />
+          </motion.div>
+
+          {/* Navigation arrows - Bottom right (hidden during required interaction) */}
+          {!(step.requiresInteraction && !interactionCompleted) && (
+            <motion.div
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              className="fixed bottom-8 right-8 z-[99999] pointer-events-auto"
+            >
+              <div className="flex flex-row gap-3">
             {/* Previous button */}
             <button
               onClick={handlePrev}
@@ -198,6 +202,14 @@ export const GuidedTour = ({
                 <span>View Flood Story</span>
                 <ChevronRight className="h-5 w-5" />
               </button>
+            ) : isLastStep && step.id === 'credits' ? (
+              <button
+                onClick={() => window.location.href = '/credits'}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg border border-purple-400 text-white font-semibold transition-all hover:scale-105 shadow-lg shadow-purple-500/50 flex items-center gap-2"
+              >
+                <span>View Credits</span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
             ) : (
               <button
                 onClick={handleNext}
@@ -213,51 +225,45 @@ export const GuidedTour = ({
               </button>
             )}
               </div>
-            )}
-          </motion.div>
+            </motion.div>
+            )
+          }
 
-          {/* Close button - Top right */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            onClick={handleSkip}
-            className="fixed top-4 right-4 z-[10001] p-3 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white pointer-events-auto"
-          >
-            <X className="h-5 w-5" />
-          </motion.button>
+          {/* Close button and Step indicator - Left side */}
+          <div className="fixed left-4 top-1/2 -translate-y-1/2 z-[99999] flex flex-col items-center gap-3">
+            {/* Close button */}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={handleSkip}
+              className="p-2 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white pointer-events-auto"
+            >
+              <X className="h-4 w-4" />
+            </motion.button>
 
-          {/* Step indicator - Top center */}
+          {/* Step indicator */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-4 py-2"
-            style={{ 
-              position: 'fixed',
-              top: '1rem',
-              left: '50vw',
-              transform: 'translateX(-50%)',
-              zIndex: 10001
-            }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="flex flex-col items-center gap-1 bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-1.5 py-2"
           >
             {steps.map((_, index) => (
               <div
                 key={index}
                 className={cn(
-                  'h-2 rounded-full transition-all',
+                  'w-1.5 rounded-full transition-all',
                   index === currentStep
-                    ? 'w-8 bg-blue-500'
+                    ? 'h-4 bg-blue-500'
                     : index < currentStep
-                    ? 'w-2 bg-blue-500/50'
-                    : 'w-2 bg-gray-600'
+                    ? 'h-1.5 bg-blue-500/50'
+                    : 'h-1.5 bg-gray-600'
                 )}
               />
             ))}
-            <span className="text-xs text-white ml-2">
-              {currentStep + 1}/{steps.length}
-            </span>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

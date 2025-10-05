@@ -458,18 +458,26 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   }, [selectedRegion]);
 
 
-  // Loading state - only block on data loading, not images
-  if (isLoading || loadingStats) {
-    return (
-      <LoadingScreen
-        title="Loading Fire Data"
-        message={isFetching ? '🔄 Fetching data from API...' : '💾 Loading from cache...'}
-      />
-    );
-  }
-
-  // Error state
+  // Show globe immediately, data will populate when ready
   if (!allFireData || !allFireData.features || allFireData.features.length === 0) {
+    // Return empty globe while loading
+    if (isLoading || loadingStats) {
+      return (
+        <div className="relative w-screen h-screen bg-black overflow-hidden">
+          <Globe
+            ref={globeRef}
+            globeImageUrl={earthGreyImage}
+            backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+          />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-center">
+            <div className="text-xl mb-2">🔄 Loading fire data...</div>
+            <div className="text-sm opacity-70">{isFetching ? 'Fetching from API' : 'Loading from cache'}</div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Error state - no data available
     return (
       <LoadingScreen
         title="⚠️ No Data Available"

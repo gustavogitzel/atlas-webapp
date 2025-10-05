@@ -139,7 +139,15 @@ export const HomePage = () => {
   }, []);
   
   // Preload flood images in background (after fire images)
-  useImagePreloader(floodImageUrls, 5);
+  const { isLoading: floodImagesLoading, progress: floodImageProgress } = useImagePreloader(floodImageUrls, 5);
+  
+  // Combined loading state
+  const totalImagesLoading = imagesLoading || floodImagesLoading;
+  const combinedProgress = imagesLoading 
+    ? imageProgress 
+    : floodImagesLoading 
+      ? floodImageProgress 
+      : 100;
   
   // Ativa o scroll snap
   useSnapScroll();
@@ -165,22 +173,24 @@ export const HomePage = () => {
   return (
     <div className="relative">
       {/* Discrete Image Preload Indicator */}
-      {imagesLoading && imageUrls.length > 0 && (
+      {totalImagesLoading && (imageUrls.length > 0 || floodImageUrls.length > 0) && (
         <div className="fixed bottom-4 right-4 z-50 bg-black/80 backdrop-blur-md border border-white/20 rounded-lg px-4 py-2 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs text-white font-medium">Preloading imagery</span>
+              <span className="text-xs text-white font-medium">
+                {imagesLoading ? '🔥 Preloading fire imagery' : '🌊 Preloading flood imagery'}
+              </span>
               <div className="flex items-center gap-2 mt-1">
                 <div className="w-32 bg-gray-700 rounded-full h-1 overflow-hidden">
                   <div 
                     className="bg-gradient-to-r from-blue-500 to-purple-500 h-1 transition-all duration-300"
-                    style={{ width: `${imageProgress}%` }}
+                    style={{ width: `${combinedProgress}%` }}
                   />
                 </div>
-                <span className="text-xs text-gray-400">{Math.round(imageProgress)}%</span>
+                <span className="text-xs text-gray-400">{Math.round(combinedProgress)}%</span>
               </div>
             </div>
           </div>

@@ -2,7 +2,6 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import Globe from 'react-globe.gl';
 import { HelpCircle, Layers, Info } from 'lucide-react';
 import { IconButton } from '@atoms/IconButton';
-import { LoadingScreen } from '@molecules/LoadingScreen';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { GuidedTour } from '@organisms/GuidedTour';
 import { createFloodGlobeTour } from '@/data/floodGlobeTour';
@@ -100,7 +99,6 @@ const FLOOD_INFO = {
 
 export const FloodGlobePage = () => {
   const globeRef = useRef<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedLayers, setSelectedLayers] = useState<string[]>([]);
   const [showInfo, setShowInfo] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -222,14 +220,6 @@ export const FloodGlobePage = () => {
     composeTexture();
   }, [selectedLayers, globeZoom, currentDate]);
 
-  // Load base image
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setIsLoading(false);
-    img.onerror = () => setIsLoading(false);
-    img.src = getLayerUrl('ASTER_GDEM_Color_Shaded_Relief', 1, false, 'image/jpeg');
-  }, []);
-
   // Auto-start tour on first load
   useEffect(() => {
     setTimeout(() => {
@@ -246,15 +236,6 @@ export const FloodGlobePage = () => {
   };
 
   const tourSteps = useMemo(() => createFloodGlobeTour(), []);
-
-  if (isLoading) {
-    return (
-      <LoadingScreen
-        title="Loading Flood Visualization"
-        message="Preparing satellite imagery..."
-      />
-    );
-  }
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">

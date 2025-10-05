@@ -1,31 +1,44 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, Flame, Zap, AlertTriangle, MapPin } from 'lucide-react';
-import type { FireDetailsResponse } from '@/types/fire';
+import { X, TrendingUp, Flame, Zap, AlertTriangle, MapPin, ExternalLink, Newspaper } from 'lucide-react';
+import type { FireFeature } from '@/types/fire';
 import { cn } from '@/lib/utils';
+import { useFireNews } from '@/hooks/useFireNews';
 
 /**
  * FireDetailModal Molecule Component
- * Modal displaying fire details
+ * Modal displaying fire details for a single fire point
  */
 
 export interface FireDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  data: FireDetailsResponse | null;
+  data: FireFeature | null;
 }
 
 export const FireDetailModal = ({ isOpen, onClose, data }: FireDetailModalProps) => {
   if (!data) return null;
 
-  // Calculate insights
-  const avgFRP = data.fires.reduce((sum, f) => sum + f.frp, 0) / data.fires.length;
-  const maxFRP = Math.max(...data.fires.map(f => f.frp));
-  const avgConfidence = data.fires.reduce((sum, f) => sum + f.confidence, 0) / data.fires.length;
-  const highConfidenceCount = data.fires.filter(f => f.confidence >= 80).length;
-  const criticalFires = data.fires.filter(f => f.frp > 100 && f.confidence >= 80).length;
+  // Extract fire properties
+  const { frp, confidence, brightness, acq_date } = data.properties;
+  const [lon, lat] = data.geometry.coordinates;
 
-  const riskLevel = criticalFires > 0 ? 'Critical' : avgFRP > 50 ? 'High' : avgFRP > 20 ? 'Medium' : 'Low';
-  const riskVariant = criticalFires > 0 ? 'destructive' : avgFRP > 50 ? 'destructive' : avgFRP > 20 ? 'secondary' : 'default';
+  // Calculate risk level based on single fire point
+  const riskLevel = frp > 100 && confidence >= 80 ? 'Critical' : frp > 50 ? 'High' : frp > 20 ? 'Medium' : 'Low';
+  const riskVariant = frp > 100 && confidence >= 80 ? 'destructive' : frp > 50 ? 'destructive' : frp > 20 ? 'secondary' : 'default';
+
+  // Fetch news about fires in this region
+  const { news, isLoading: newsLoading } = useFireNews(lat, lon, acq_date);
+
+  // Google Maps URLs
+  const googleMapsUrl = `https://www.google.com/maps/@${lat},${lon},12z`;
+  const googleEarthUrl = `https://earth.google.com/web/@${lat},${lon},1000a,1000d,35y,0h,0t,0r`;
+  const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`;
+  
+  // NASA GIBS imagery for the fire date (MODIS Thermal Anomalies)
+  const gibsFireImageUrl = `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&layers=MODIS_Terra_Thermal_Anomalies_All&version=1.3.0&crs=EPSG:4326&transparent=true&width=600&height=400&bbox=${lat-0.5},${lon-0.5},${lat+0.5},${lon+0.5}&format=image/png&time=${acq_date}`;
+  
+  // FIRMS fire map URL
+  const firmsMapUrl = `https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@${lon},${lat},13z`;
 
   return (
     <AnimatePresence>
@@ -52,7 +65,7 @@ export const FireDetailModal = ({ isOpen, onClose, data }: FireDetailModalProps)
                   Fire Cluster Analysis
                 </h2>
                 <p className="text-xs md:text-sm text-gray-400 mt-1">
-                  {data.count} detections within {data.radius}° radius
+                  {data.count || 1} detection{(data.count || 1) > 1 ? 's' : ''} within {data.radius?.toFixed(3) || '0.000'}° radius
                 </p>
               </div>
               <button
@@ -85,11 +98,90 @@ export const FireDetailModal = ({ isOpen, onClose, data }: FireDetailModalProps)
                 )}>Risk Level: {riskLevel}</h3>
               </div>
               <p className="text-sm text-gray-300">
-                {criticalFires > 0 && `${criticalFires} critical fire(s) with high intensity detected.`}
-                {criticalFires === 0 && avgFRP > 50 && 'Multiple fires with elevated intensity.'}
-                {avgFRP <= 50 && avgFRP > 20 && 'Moderate fire activity in the area.'}
-                {avgFRP <= 20 && 'Low intensity fires detected.'}
+                {frp > 100 && confidence >= 80 && 'Critical fire with very high intensity detected.'}
+                {(frp <= 100 || confidence < 80) && frp > 50 && 'Fire with elevated intensity detected.'}
+                {frp <= 50 && frp > 20 && 'Moderate fire activity detected.'}
+                {frp <= 20 && 'Low intensity fire detected.'}
               </p>
+            </div>
+
+            {/* Satellite Imagery */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                <MapPin className="h-5 w-5 text-purple-500" />
+                Satellite Imagery
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* NASA GIBS Fire Detection */}
+                <div className="rounded-lg border border-white/20 bg-black/50 overflow-hidden">
+                  <div className="aspect-video relative bg-gray-900">
+                    <img
+                      src={gibsFireImageUrl}
+                      alt="NASA Fire Detection"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to Google Images search for wildfire in the region
+                        const searchQuery = `wildfire+fire+${lat.toFixed(1)}+${lon.toFixed(1)}+${acq_date}`;
+                        e.currentTarget.src = `https://source.unsplash.com/600x400/?wildfire,forest-fire,smoke`;
+                        e.currentTarget.onclick = () => window.open(`https://www.google.com/search?q=${searchQuery}&tbm=isch`, '_blank');
+                        e.currentTarget.style.cursor = 'pointer';
+                      }}
+                    />
+                    <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
+                      NASA MODIS Thermal
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-gray-400">Thermal anomalies detected on {acq_date}</p>
+                  </div>
+                </div>
+
+                {/* Google Images Search */}
+                <a
+                  href={`https://www.google.com/search?q=wildfire+fire+${lat.toFixed(2)}+${lon.toFixed(2)}+${acq_date}&tbm=isch`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/20 bg-black/50 overflow-hidden hover:border-blue-500/50 transition-colors group"
+                >
+                  <div className="aspect-video relative bg-gray-900">
+                    <img
+                      src={`https://source.unsplash.com/600x400/?wildfire,forest,fire,smoke`}
+                      alt="Wildfire Images"
+                      className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
+                      <div>
+                        <p className="text-sm text-white font-semibold mb-1">Search Images</p>
+                        <p className="text-xs text-gray-300">View photos from this region</p>
+                      </div>
+                    </div>
+                    <ExternalLink className="absolute top-2 right-2 h-4 w-4 text-white group-hover:text-blue-400 transition-colors" />
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-gray-400">Click to search wildfire images on Google</p>
+                  </div>
+                </a>
+
+                {/* FIRMS Interactive Map */}
+                <a
+                  href={firmsMapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/20 bg-black/50 overflow-hidden hover:border-orange-500/50 transition-colors group"
+                >
+                  <div className="aspect-video relative bg-gray-900 flex items-center justify-center">
+                    <div className="text-center p-4">
+                      <Flame className="h-12 w-12 text-orange-500 mx-auto mb-2" />
+                      <p className="text-sm text-white font-semibold mb-1">Interactive Fire Map</p>
+                      <p className="text-xs text-gray-400">Click to view in FIRMS</p>
+                    </div>
+                    <ExternalLink className="absolute top-2 right-2 h-4 w-4 text-gray-400 group-hover:text-orange-400 transition-colors" />
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-gray-400">Real-time fire monitoring and historical data</p>
+                  </div>
+                </a>
+              </div>
             </div>
 
             {/* Metrics Grid */}
@@ -97,17 +189,9 @@ export const FireDetailModal = ({ isOpen, onClose, data }: FireDetailModalProps)
               <div className="rounded-lg border border-white/20 bg-black/50 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="h-4 w-4 text-orange-500" />
-                  <span className="text-xs font-medium text-gray-400 uppercase">Avg FRP</span>
+                  <span className="text-xs font-medium text-gray-400 uppercase">FRP</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{avgFRP.toFixed(1)}<span className="text-sm text-gray-400 ml-1">MW</span></p>
-              </div>
-
-              <div className="rounded-lg border border-white/20 bg-black/50 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-orange-500" />
-                  <span className="text-xs font-medium text-gray-400 uppercase">Max FRP</span>
-                </div>
-                <p className="text-2xl font-bold text-white">{maxFRP.toFixed(1)}<span className="text-sm text-gray-400 ml-1">MW</span></p>
+                <p className="text-2xl font-bold text-white">{frp.toFixed(1)}<span className="text-sm text-gray-400 ml-1">MW</span></p>
               </div>
 
               <div className="rounded-lg border border-white/20 bg-black/50 p-4">
@@ -115,17 +199,138 @@ export const FireDetailModal = ({ isOpen, onClose, data }: FireDetailModalProps)
                   <Flame className="h-4 w-4 text-blue-500" />
                   <span className="text-xs font-medium text-gray-400 uppercase">Confidence</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{avgConfidence.toFixed(0)}<span className="text-sm text-gray-400 ml-1">%</span></p>
+                <p className="text-2xl font-bold text-white">{confidence.toFixed(0)}<span className="text-sm text-gray-400 ml-1">%</span></p>
               </div>
 
               <div className="rounded-lg border border-white/20 bg-black/50 p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="h-4 w-4 text-blue-500" />
-                  <span className="text-xs font-medium text-gray-400 uppercase">High Conf.</span>
+                  <TrendingUp className="h-4 w-4 text-orange-500" />
+                  <span className="text-xs font-medium text-gray-400 uppercase">Bright TI4</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{highConfidenceCount}<span className="text-sm text-gray-400 ml-1">/ {data.count}</span></p>
+                <p className="text-2xl font-bold text-white">{brightness.toFixed(1)}<span className="text-sm text-gray-400 ml-1">K</span></p>
+              </div>
+
+              <div className="rounded-lg border border-white/20 bg-black/50 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="h-4 w-4 text-blue-500" />
+                  <span className="text-xs font-medium text-gray-400 uppercase">Location</span>
+                </div>
+                <p className="text-sm font-bold text-white">{lat.toFixed(3)}, {lon.toFixed(3)}</p>
               </div>
             </div>
+
+            {/* Google Maps Integration */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                <MapPin className="h-5 w-5 text-blue-500" />
+                Location & Imagery
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Google Maps Satellite View */}
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/20 bg-black/50 p-4 hover:bg-black/70 transition-colors group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-white">Google Maps</span>
+                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                  </div>
+                  <p className="text-xs text-gray-400">View satellite imagery and terrain</p>
+                </a>
+
+                {/* Google Earth */}
+                <a
+                  href={googleEarthUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/20 bg-black/50 p-4 hover:bg-black/70 transition-colors group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-white">Google Earth</span>
+                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-green-400 transition-colors" />
+                  </div>
+                  <p className="text-xs text-gray-400">3D view and historical imagery</p>
+                </a>
+
+                {/* Street View */}
+                <a
+                  href={streetViewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/20 bg-black/50 p-4 hover:bg-black/70 transition-colors group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-white">Street View</span>
+                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-yellow-400 transition-colors" />
+                  </div>
+                  <p className="text-xs text-gray-400">Ground-level panoramic views</p>
+                </a>
+
+                {/* Search News */}
+                <a
+                  href={`https://www.google.com/search?q=wildfire+${lat.toFixed(2)}+${lon.toFixed(2)}+${acq_date}&tbm=nws`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-white/20 bg-black/50 p-4 hover:bg-black/70 transition-colors group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-white">Search News</span>
+                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-orange-400 transition-colors" />
+                  </div>
+                  <p className="text-xs text-gray-400">Latest news about this region</p>
+                </a>
+              </div>
+            </div>
+
+            {/* Related News */}
+            {news.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                  <Newspaper className="h-5 w-5 text-purple-500" />
+                  Related News & Reports
+                </h3>
+                <div className="space-y-3">
+                  {news.map((article, i) => (
+                    <motion.a
+                      key={i}
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="block rounded-lg border border-white/20 bg-black/50 p-4 hover:bg-black/70 transition-colors group"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <h4 className="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors mb-1">
+                            {article.title}
+                          </h4>
+                          <p className="text-xs text-gray-400 mb-2">{article.description}</p>
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <span>{article.source}</span>
+                            <span>•</span>
+                            <span>{article.publishedAt}</span>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-400 transition-colors flex-shrink-0" />
+                      </div>
+                    </motion.a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {newsLoading && (
+              <div className="mb-6 text-center">
+                <div className="inline-flex items-center gap-2 text-sm text-gray-400">
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500" />
+                  Loading news...
+                </div>
+              </div>
+            )}
 
             {/* Detection List */}
             <div>
@@ -134,7 +339,18 @@ export const FireDetailModal = ({ isOpen, onClose, data }: FireDetailModalProps)
                 Individual Detections
               </h3>
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {data.fires.map((fire, i) => (
+                {(data.fires || [{ 
+                  latitude: data.properties.latitude,
+                  longitude: data.properties.longitude,
+                  brightness: data.properties.brightness,
+                  frp: data.properties.frp,
+                  confidence: data.properties.confidence,
+                  satellite: data.properties.satellite,
+                  date: data.properties.acq_date,
+                  time: data.properties.acq_time,
+                  lat: data.geometry.coordinates[1],
+                  lon: data.geometry.coordinates[0]
+                }]).map((fire, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, x: -10 }}

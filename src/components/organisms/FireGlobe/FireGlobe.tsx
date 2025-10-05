@@ -1,22 +1,26 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import Globe from 'react-globe.gl';
-import { Filter, Map, HelpCircle, ChevronDown, ChevronUp, Flame, MapPin, Clock, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, Map, HelpCircle, ChevronDown, ChevronUp, Flame, MapPin, Clock, Play, Pause, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { useFirePoints, useFireStatistics } from '@hooks/useFireData';
+import { useImagePreloader } from '@hooks/useImagePreloader';
 import { IconButton } from '@atoms/IconButton';
 import { CacheIndicator } from '@atoms/CacheIndicator';
 import { generatePointTooltip } from '@atoms/PointTooltip';
+import { LoadingScreen } from '@molecules/LoadingScreen';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { FilterPanel } from '@molecules/FilterPanel';
 import { FireDetailModal } from '@molecules/FireDetailModal';
 import { FireStats } from '@molecules/FireStats';
 import { RegionSelector } from '@molecules/RegionSelector';
+import { LayerSelector } from '@molecules/LayerSelector';
 import { GuidedTour } from '@organisms/GuidedTour';
-import { fetchFireDetails } from '@/services/fireAPI';
 import { FIRE_GLOBE_CONFIG, getPointColor, getPointAltitude, getPointRadius } from './FireGlobeConfig';
 import { REGION_OPTIONS } from '@/data/amazonRegion';
 import { createFireGlobeTour } from '@/data/fireGlobeTour';
+import { getLayerUrl, getDefaultLayer, GLOBE_LAYERS } from '@/config/globeLayers';
+import { composeGlobeTexture } from '@/utils/textureComposer';
 import satelliteImage from '@/assets/images/satellite.png';
-import type { FireFeature, FireDetailsResponse } from '@/types/fire';
+import type { FireFeature } from '@/types/fire';
 
 /**
  * FireGlobe Organism Component
@@ -27,23 +31,26 @@ export interface FireGlobeProps {
   maxPoints?: number;
   minConfidence?: number;
 }
-
 export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobeProps) => {
   // Data fetching with React Query
   const { data: allFireData, isLoading, isFetching } = useFirePoints({ maxPoints, minConfidence });
   const { isLoading: loadingStats } = useFireStatistics();
 
-  // State management
-  const [filteredData, setFilteredData] = useState<FireFeature[] | null>(null);
-  const [selectedPoint, setSelectedPoint] = useState<FireDetailsResponse | null>(null);
+  // UI state
+  const [selectedPoint, setSelectedPoint] = useState<FireFeature | null>(null);
   const [showModal, setShowModal] = useState(false);
+  
+  // Globe ref for accessing globe methods
+  const globeRef = useRef<any>(null);
 
   // Timeline state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
   const [uniqueDates, setUniqueDates] = useState<string[]>([]);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1000);
+  // Match playback speed with point transition duration for synchronized animation
+  const [playbackSpeed, setPlaybackSpeed] = useState(FIRE_GLOBE_CONFIG.animation.pointTransitionDuration);
   const [timeGrouping, setTimeGrouping] = useState<'daily' | '5-days' | 'weekly' | 'monthly'>('5-days');
+  const [filteredData, setFilteredData] = useState<FireFeature[]>([]);
 
   // Filter state
   const [selectedSatellite, setSelectedSatellite] = useState('Terra');
@@ -53,6 +60,15 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   
   // Visualization mode
   const [visualizationMode, setVisualizationMode] = useState<'points' | 'heatmap'>('points');
+  
+  // Base layer selection - Default to Terra True Color
+  const [selectedLayerId, setSelectedLayerId] = useState('terra-truecolor');
+  
+  // Aerosol overlay layer
+  const [showAerosolLayer, setShowAerosolLayer] = useState(true);
+  
+  // Zoom level for dynamic resolution
+  const [globeZoom, setGlobeZoom] = useState(1);
   
   // Guided tour
   const [showTour, setShowTour] = useState(false);
@@ -109,12 +125,107 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     return dateStr;
   }, [uniqueDates, currentDateIndex]);
 
-  // Generate GIBS globe image URL for the current date
-  const gibsGlobeUrl = useMemo(() => {
-    // Use GIBS WMTS service with proper parameters for equirectangular projection
-    // Using epsg4326 (Geographic) projection and a single tile at zoom level 0 for full Earth view
-    return `https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${currentGIBSDate}/250m/0/0/0.jpg`;
-  }, [currentGIBSDate]);
+  // Generate GIBS globe image URL for the current date and selected layer
+  // Use the end date of the current date range for better data availability
+  const displayDate = useMemo(() => {
+    if (!uniqueDates.length) return currentGIBSDate;
+    
+    // Get current date
+    const current = uniqueDates[currentDateIndex];
+    if (!current) return currentGIBSDate;
+    
+    // If there's a next date, use the day before it (end of current period)
+    // Otherwise use the current date
+    if (currentDateIndex < uniqueDates.length - 1) {
+      const nextDate = new Date(uniqueDates[currentDateIndex + 1]);
+      nextDate.setDate(nextDate.getDate() - 1);
+      return nextDate.toISOString().split('T')[0];
+    }
+    
+    return current;
+  }, [uniqueDates, currentDateIndex, currentGIBSDate]);
+
+  // Generate all possible image URLs for preloading
+  const imageUrls = useMemo(() => {
+    if (!uniqueDates.length) return [];
+    
+    const layer = GLOBE_LAYERS.find((l) => l.id === selectedLayerId) || getDefaultLayer();
+    
+    // Preload images for all available dates
+    // This enables instant transitions without fade effects
+    // Images are loaded in batches to avoid overwhelming the browser
+    return uniqueDates.map(date => getLayerUrl(layer, date, 1));
+  }, [uniqueDates, selectedLayerId]);
+
+  // Generate overlay URLs for all dates
+  const overlayUrls = useMemo(() => {
+    if (!showAerosolLayer || !uniqueDates.length) return undefined;
+    
+    return uniqueDates.map(dateStr => {
+      const date = new Date(dateStr);
+      const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      const formattedDate = lastDay.toISOString().split('T')[0];
+      
+      const baseUrl = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
+      const params = new URLSearchParams({
+        SERVICE: 'WMS',
+        REQUEST: 'GetMap',
+        layers: 'MISR_Aerosol_Optical_Depth_Avg_Green_Monthly',
+        version: '1.3.0',
+        crs: 'EPSG:4326',
+        transparent: 'true',
+        width: '2048',
+        height: '1024',
+        bbox: '-90,-180,90,180',
+        format: 'image/png',
+        time: formattedDate
+      });
+      
+      return `${baseUrl}?${params.toString()}`;
+    });
+  }, [uniqueDates, showAerosolLayer]);
+
+  // Check if images are already cached (from HomePage)
+  // If so, skip preloading to avoid duplicate work
+  const { getComposedUrl } = useImagePreloader(
+    imageUrls, 
+    10,
+    overlayUrls,
+    showAerosolLayer ? (base, overlay) => composeGlobeTexture(base, overlay, 0.3) : undefined
+  );
+
+  // Current globe texture URL
+  const [gibsGlobeUrl, setGibsGlobeUrl] = useState('');
+  
+  // Update globe URL when date/layer changes or aerosol is toggled
+  useEffect(() => {
+    const updateTexture = async () => {
+      const layer = GLOBE_LAYERS.find((l) => l.id === selectedLayerId) || getDefaultLayer();
+      const baseUrl = getLayerUrl(layer, displayDate, globeZoom);
+      
+      if (showAerosolLayer) {
+        // Get pre-composed URL from cache if available
+        const composedUrl = getComposedUrl(baseUrl);
+        if (composedUrl !== baseUrl) {
+          // Already composed in cache
+          setGibsGlobeUrl(composedUrl);
+        } else {
+          // Compose on-the-fly if not in cache
+          const dateIndex = uniqueDates.indexOf(displayDate);
+          const overlayUrl = overlayUrls?.[dateIndex];
+          const composed = await composeGlobeTexture(baseUrl, overlayUrl, 0.3);
+          setGibsGlobeUrl(composed);
+        }
+      } else {
+        // No aerosol - use base image only
+        setGibsGlobeUrl(baseUrl);
+      }
+    };
+    
+    updateTexture();
+  }, [displayDate, selectedLayerId, globeZoom, showAerosolLayer, getComposedUrl, overlayUrls, uniqueDates]);
+
+  console.log('Globe URL:', gibsGlobeUrl, 'Date:', displayDate, 'Zoom:', globeZoom);
 
   // Create tour steps with state setters
   const tourSteps = useMemo(
@@ -135,6 +246,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
       const dates = [...new Set(allFireData.features.map((f) => f.properties.acq_date))].sort();
       setUniqueDates(dates);
       setCurrentDateIndex(0);
+      // Don't auto-start - wait for user to click play
     }
   }, [allFireData]);
 
@@ -209,16 +321,16 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     setFilteredData(enrichedData);
   }, [allFireData, currentDateIndex, selectedSatellite, filterMinConfidence, uniqueDates]);
 
-  // Playback control
+  // Playback control with GIF-like looping
   useEffect(() => {
     if (isPlaying) {
       const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
       
       playIntervalRef.current = setInterval(() => {
         setCurrentDateIndex((prev) => {
+          // Loop back to start when reaching the end (GIF behavior)
           if (prev >= uniqueDates.length - 1) {
-            setIsPlaying(false);
-            return prev;
+            return 0; // Restart from beginning
           }
           return Math.min(prev + step, uniqueDates.length - 1);
         });
@@ -237,17 +349,9 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   }, [isPlaying, playbackSpeed, uniqueDates.length, timeGrouping]);
 
   // Handle point click
-  const handlePointClick = async (point: FireFeature) => {
-    const lat = point.geometry.coordinates[1];
-    const lon = point.geometry.coordinates[0];
-
-    try {
-      const data = await fetchFireDetails(lat, lon, 0.05);
-      setSelectedPoint(data);
-      setShowModal(true);
-    } catch (error) {
-      console.error('Error loading fire details:', error);
-    }
+  const handlePointClick = (point: FireFeature) => {
+    setSelectedPoint(point);
+    setShowModal(true);
   };
 
   // Memoized values with grouping support
@@ -295,30 +399,23 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   }, [selectedRegion]);
 
 
-  // Loading state
+  // Loading state - only block on data loading, not images
   if (isLoading || loadingStats) {
     return (
-      <div className="flex items-center justify-center h-screen bg-black text-white text-2xl">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500 mx-auto mb-4" />
-          <p>Loading fire data...</p>
-          <p className="text-sm text-gray-400 mt-2">
-            {isFetching ? '🔄 Buscando dados...' : '💾 Carregando do cache...'}
-          </p>
-        </div>
-      </div>
+      <LoadingScreen
+        title="Loading Fire Data"
+        message={isFetching ? '🔄 Fetching data from API...' : '💾 Loading from cache...'}
+      />
     );
   }
 
   // Error state
   if (!allFireData || !allFireData.features || allFireData.features.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-black text-white text-2xl">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">⚠️ Nenhum dado carregado</p>
-          <p className="text-sm text-gray-400">Verifique se a API está online</p>
-        </div>
-      </div>
+      <LoadingScreen
+        title="⚠️ No Data Available"
+        message="Please check if the API is online or try again later"
+      />
     );
   }
 
@@ -394,7 +491,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
           </div>
         )}
 
-        {/* Region Selector and Control Buttons */}
+        {/* Region Selector, Layer Selector and Control Buttons */}
         <div className="flex flex-col md:flex-row items-stretch md:items-start gap-2">
         {/* Region Selector - First on mobile, first on desktop */}
         <div className="region-selector-container w-auto md:w-64 order-1 md:order-1">
@@ -421,8 +518,16 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
           </div>
         </div>
 
-        {/* Control Buttons - Second on mobile, second on desktop */}
-        <div className="flex flex-row md:flex-col gap-2 order-2 md:order-2">
+        {/* Layer Selector - Second on mobile, second on desktop */}
+        <div className="layer-selector-container w-auto md:w-64 order-2 md:order-2">
+          <LayerSelector
+            selectedLayerId={selectedLayerId}
+            onLayerChange={setSelectedLayerId}
+          />
+        </div>
+
+        {/* Control Buttons - Third on mobile, third on desktop */}
+        <div className="flex flex-row md:flex-col gap-2 order-3 md:order-3">
           <IconButton
             icon={<Filter />}
             onClick={() => setShowFilters(!showFilters)}
@@ -436,6 +541,13 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
             variant="default"
             title={visualizationMode === 'points' ? 'Switch to Heatmap' : 'Switch to Points'}
             className="visualization-toggle"
+          />
+          <IconButton
+            icon={<Layers />}
+            onClick={() => setShowAerosolLayer(!showAerosolLayer)}
+            variant={showAerosolLayer ? "default" : "outline"}
+            title={showAerosolLayer ? 'Hide Aerosol Layer' : 'Show Aerosol Layer'}
+            className="aerosol-toggle"
           />
           <IconButton
             icon={<HelpCircle />}
@@ -476,11 +588,22 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         />
       </div>
 
-      {/* Globe */}
-      <div className="globe-container w-full h-full">
+      {/* Globe with synchronized image and point animations */}
+      <div className="globe-container w-full h-full" style={{
+        transition: 'none' // No CSS transitions - instant image changes synchronized with point animations
+      }}>
         <Globe
+          ref={globeRef}
           globeImageUrl={gibsGlobeUrl}
           backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+          onZoom={(coords: any) => {
+            // Update zoom level for dynamic resolution
+            // coords.altitude ranges from ~1.5 (zoomed out) to ~0.1 (zoomed in)
+            // Convert to zoom level: 1 (far) to 4 (close)
+            const altitude = coords?.altitude || 1.5;
+            const zoomLevel = Math.max(1, Math.min(4, 1.5 / altitude));
+            setGlobeZoom(zoomLevel);
+          }}
           polygonsData={selectedRegionPolygon}
           polygonGeoJsonGeometry="geometry"
           polygonCapColor={(d: any) => d.properties?.color || 'rgba(34, 139, 34, 0.3)'}

@@ -734,11 +734,12 @@ export const FloodGlobePage = () => {
       />
 
       {/* Timeline Controls */}
-      <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end">
+      <div className="absolute bottom-24 left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end">
         <TimelineControls
           currentDate={currentDate}
           currentIndex={currentDateIndex}
           totalDates={uniqueDates.length}
+          isTourActive={showTour}
           currentCount={0}
           isPlaying={isPlaying}
           playbackSpeed={1000}

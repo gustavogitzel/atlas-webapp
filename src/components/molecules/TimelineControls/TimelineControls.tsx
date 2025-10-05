@@ -17,6 +17,7 @@ export interface TimelineControlsProps {
   isPlaying: boolean;
   playbackSpeed: number;
   grouping?: TimeGrouping;
+  isTourActive?: boolean;
   onPlayPause: () => void;
   onSkipBack: () => void;
   onSkipForward: () => void;
@@ -35,6 +36,7 @@ export const TimelineControls = ({
   isPlaying,
   playbackSpeed,
   grouping = '5-days',
+  isTourActive = false,
   onPlayPause,
   onSkipBack,
   onSkipForward,
@@ -47,6 +49,7 @@ export const TimelineControls = ({
   const progressPercentage = totalDates > 1 ? (currentIndex / (totalDates - 1)) * 100 : 0;
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
@@ -70,8 +73,9 @@ export const TimelineControls = ({
         </div>
       </div>
 
-      {/* Playback Controls */}
-      <div className="flex items-center justify-center gap-4 md:gap-6 mb-4 md:mb-6">
+      {/* Playback Controls - Hidden during tour */}
+      {!isTourActive && (
+        <div className="flex items-center justify-center gap-4 md:gap-6 mb-4 md:mb-6">
         <IconButton
           icon={<SkipBack />}
           onClick={onSkipBack}
@@ -103,10 +107,12 @@ export const TimelineControls = ({
           variant="default"
           size="md"
         />
-      </div>
+        </div>
+      )}
 
-      {/* Timeline Slider */}
-      <div className="relative mb-4">
+      {/* Timeline Slider - Hidden during tour */}
+      {!isTourActive && (
+        <div className="relative mb-4">
         {/* Progress Bar Background */}
         <div className="h-2 bg-white/20 rounded-full" />
 
@@ -133,10 +139,12 @@ export const TimelineControls = ({
             <div className="text-gray-400">{endDate}</div>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
-      {/* Playback Speed Control */}
-      <div className="pt-4 border-t border-white/20">
+      {/* Playback Speed Control - Hidden during tour */}
+      {!isTourActive && (
+        <div className="pt-4 border-t border-white/20">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-gray-400">Speed</span>
           <span className="text-xs font-medium text-white">
@@ -152,10 +160,11 @@ export const TimelineControls = ({
           onChange={(e) => onSpeedChange(parseInt(e.target.value))}
           className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500"
         />
-      </div>
+        </div>
+      )}
 
-      {/* Time Grouping Control */}
-      {onGroupingChange && (
+      {/* Time Grouping Control - Hidden during tour */}
+      {!isTourActive && onGroupingChange && (
         <div className="time-grouping pt-4 border-t border-white/20">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-400">Grouping</span>
@@ -207,14 +216,12 @@ export const TimelineControls = ({
           </div>
         </div>
       )}
-
-      {/* Custom Slider Styles */}
-      <style>{`
-        .timeline-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 18px;
-          height: 18px;
+    </motion.div>
+    <style>{`
+      .timeline-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
           border-radius: 50%;
           background: #f97316;
           cursor: pointer;
@@ -244,6 +251,6 @@ export const TimelineControls = ({
           box-shadow: 0 2px 12px rgba(249, 115, 22, 0.8);
         }
       `}</style>
-    </motion.div>
+    </>
   );
 };

@@ -154,27 +154,31 @@ export const GuidedTour = ({
             ) : null}
           </AnimatePresence>
 
-
-          {/* Character with speech and navigation - Always at bottom */}
+          {/* Character with speech - Always at bottom left */}
           <motion.div
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="fixed left-8 bottom-8 z-[10001] flex items-end gap-4"
+            className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
           >
-            <div className="pointer-events-none">
-              <GuideCharacter
-                imageUrl={characterImage}
-                message={step.description}
-                isActive
-                showMessage
-                avatarSize="lg"
-              />
-            </div>
-            
-            {/* Navigation arrows - Next to character speech bubble (hidden during required interaction) */}
-            {!(step.requiresInteraction && !interactionCompleted) && (
-              <div className="flex flex-row gap-3 mb-12 pointer-events-auto">
+            <GuideCharacter
+              imageUrl={characterImage}
+              message={step.description}
+              isActive
+              showMessage
+              avatarSize="lg"
+            />
+          </motion.div>
+
+          {/* Navigation arrows - Bottom right (hidden during required interaction) */}
+          {!(step.requiresInteraction && !interactionCompleted) && (
+            <motion.div
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              className="fixed bottom-8 right-8 z-[10001] pointer-events-auto"
+            >
+              <div className="flex flex-row gap-3">
             {/* Previous button */}
             <button
               onClick={handlePrev}
@@ -213,8 +217,8 @@ export const GuidedTour = ({
               </button>
             )}
               </div>
-            )}
-          </motion.div>
+            </motion.div>
+          )}
 
           {/* Step indicator and close button - Left center (vertical) */}
           <div className="fixed left-4 top-1/2 -translate-y-1/2 z-[10001] flex flex-col items-center gap-3">

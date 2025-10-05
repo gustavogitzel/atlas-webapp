@@ -835,7 +835,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
       </div>
 
       {/* Timeline Controls - Responsive */}
-      <div className="timeline-controls absolute bottom-4 left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end">
+      <div className="timeline-controls absolute bottom-24 left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end">
         <div className="relative">
           <button
             onClick={handleTimelineToggle}
@@ -852,6 +852,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
               isPlaying={isPlaying}
               playbackSpeed={playbackSpeed}
               grouping={timeGrouping}
+              isTourActive={showTour}
               onPlayPause={() => setIsPlaying(!isPlaying)}
               onSkipBack={() => {
                 const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;

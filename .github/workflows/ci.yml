@@ -43,7 +43,7 @@ jobs:
           VITE_API_URL: https://atlas-api-apy0.onrender.com
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.node-version == '18.x'
         with:
           name: dist

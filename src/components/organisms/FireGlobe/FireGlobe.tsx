@@ -17,7 +17,7 @@ import { GuidedTour } from '@organisms/GuidedTour';
 import { FIRE_GLOBE_CONFIG, getPointColor, getPointAltitude, getPointRadius } from './FireGlobeConfig';
 import { REGION_OPTIONS } from '@/data/amazonRegion';
 import { createFireGlobeTour } from '@/data/fireGlobeTour';
-import { getLayerUrl, getDefaultLayer, GLOBE_LAYERS } from '@/config/globeLayers';
+import { getLayerUrl, getDefaultLayer, GLOBE_LAYERS, getCOLayerUrl } from '@/config/globeLayers';
 import { composeGlobeTexture } from '@/utils/textureComposer';
 import satelliteImage from '@/assets/images/satellite.png';
 import earthGreyImage from '@/assets/images/earth-grey.jpg';
@@ -62,11 +62,12 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   // Visualization mode - Default OFF (heatmap means no points visible)
   const [visualizationMode, setVisualizationMode] = useState<'points' | 'heatmap'>('heatmap');
   
-  // Base layer selection - Default to Earth Grey
-  const [selectedLayerId, setSelectedLayerId] = useState('earth-grey');
+  // Base layer selection - Default to True Color
+  const [selectedLayerId, setSelectedLayerId] = useState('terra-truecolor');
   
-  // Aerosol overlay layer - Default OFF
+  // Overlay layers - Default OFF
   const [showAerosolLayer, setShowAerosolLayer] = useState(false);
+  const [showCOLayer, setShowCOLayer] = useState(false);
   
   // Zoom level for dynamic resolution
   const [globeZoom, setGlobeZoom] = useState(1);
@@ -194,7 +195,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   }, [uniqueDates, showAerosolLayer]);
 
   // Preload all images for instant layer/date switching
-  const { isLoading: imagesLoading, progress: imageProgress, getComposedUrl } = useImagePreloader(
+  const { isLoading: imagesLoading, progress: imageProgress } = useImagePreloader(
     imageUrls, 
     10,
     overlayUrls,
@@ -214,81 +215,120 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     withoutOverlay: earthGreyImage,
   });
   
-  // Pre-compose earth-grey with overlay on initial load
+  // Initialize as soon as we have dates
   useEffect(() => {
-    const initializeWithOverlay = async () => {
-      if (!isInitialized && uniqueDates.length > 0 && overlayUrls && overlayUrls.length > 0) {
-        // Pre-compose earth-grey with overlay and cache it
+    if (!isInitialized && uniqueDates.length > 0) {
+      console.log('🚀 Initializing globe...');
+      setIsInitialized(true);
+    }
+  }, [uniqueDates, isInitialized]);
+  
+  // Pre-compose earth-grey with overlay in background (optional optimization)
+  useEffect(() => {
+    const preComposeEarthGrey = async () => {
+      if (overlayUrls && overlayUrls.length > 0 && !earthGreyCache.current.withOverlay) {
+        console.log('🎨 Pre-composing earth-grey with overlay...');
         const overlayUrl = overlayUrls[0];
         const composed = await composeGlobeTexture(earthGreyImage, overlayUrl, 0.3);
         earthGreyCache.current.withOverlay = composed;
-        
-        // Set initial state based on showAerosolLayer
-        if (showAerosolLayer) {
-          setGibsGlobeUrl(composed);
-        } else {
-          setGibsGlobeUrl(earthGreyImage);
-        }
-        
-        setIsInitialized(true);
+        console.log('✅ Earth-grey overlay cached');
       }
     };
     
-    initializeWithOverlay();
-  }, [uniqueDates, overlayUrls, isInitialized]);
+    preComposeEarthGrey();
+  }, [overlayUrls]);
   
   // Update globe URL ONLY when user explicitly changes layer or toggles aerosol
   useEffect(() => {
     const updateTexture = async () => {
       // Skip if not initialized yet
-      if (!isInitialized) return;
+      if (!isInitialized) {
+        console.log('⏸️ Not initialized yet, skipping texture update');
+        return;
+      }
+      
+      console.log('🔄 Updating texture:', { selectedLayerId, showAerosolLayer, displayDate, globeZoom });
       
       // Handle aerosol toggle for earth-grey (INSTANT - uses cache)
       if (selectedLayerId === 'earth-grey') {
         if (showAerosolLayer) {
           // Use cached version with overlay (instant!)
           if (earthGreyCache.current.withOverlay) {
+            console.log('✅ Using earth-grey WITH overlay (cached)');
             setGibsGlobeUrl(earthGreyCache.current.withOverlay);
           }
         } else {
           // Use cached version without overlay (instant!)
+          console.log('✅ Using earth-grey WITHOUT overlay');
           setGibsGlobeUrl(earthGreyCache.current.withoutOverlay);
         }
         return;
       }
       
-      // User selected a different layer
+      // User selected a different layer (GIBS layers)
       const layer = GLOBE_LAYERS.find((l) => l.id === selectedLayerId) || getDefaultLayer();
-      const baseUrl = getLayerUrl(layer, displayDate, globeZoom);
+      console.log('📍 Selected layer:', layer.name, layer.id);
       
-      if (showAerosolLayer) {
-        // Get pre-composed URL from cache if available
-        const composedUrl = getComposedUrl(baseUrl);
-        if (composedUrl !== baseUrl) {
-          // Already composed in cache
-          setGibsGlobeUrl(composedUrl);
-        } else {
-          // Compose on-the-fly if not in cache
+      const baseUrl = getLayerUrl(layer, displayDate, globeZoom);
+      console.log('🔗 Base URL generated:', baseUrl.substring(0, 150));
+      
+      // Check if any overlays are enabled
+      const hasOverlays = showAerosolLayer || showCOLayer;
+      
+      if (hasOverlays) {
+        console.log('🎨 Composing with overlays:', { aerosol: showAerosolLayer, co: showCOLayer });
+        
+        // Start with base layer
+        let currentTexture = baseUrl;
+        
+        // Add aerosol overlay if enabled
+        if (showAerosolLayer) {
           const dateIndex = uniqueDates.indexOf(displayDate);
-          const overlayUrl = overlayUrls?.[dateIndex];
-          const composed = await composeGlobeTexture(baseUrl, overlayUrl, 0.3);
-          setGibsGlobeUrl(composed);
+          const aerosolUrl = overlayUrls?.[dateIndex];
+          
+          if (aerosolUrl) {
+            console.log('🌫️ Adding aerosol overlay...');
+            currentTexture = await composeGlobeTexture(currentTexture, aerosolUrl, 0.3);
+          }
         }
+        
+        // Add CO overlay if enabled
+        if (showCOLayer) {
+          console.log('💨 Adding CO overlay...');
+          const coUrl = getCOLayerUrl(displayDate, globeZoom);
+          currentTexture = await composeGlobeTexture(currentTexture, coUrl, 0.5);
+        }
+        
+        setGibsGlobeUrl(currentTexture);
+        console.log('✅ Composed texture with overlays set');
       } else {
-        // User turned off aerosol - show layer without overlay
+        console.log('🌍 No overlays - using base layer only');
         setGibsGlobeUrl(baseUrl);
+        console.log('✅ Base texture set:', baseUrl.substring(0, 150));
       }
     };
     
     updateTexture();
-  }, [selectedLayerId, showAerosolLayer, isInitialized, overlayUrls, getComposedUrl, displayDate, globeZoom, uniqueDates]);
+  }, [selectedLayerId, showAerosolLayer, showCOLayer, isInitialized, displayDate, globeZoom, uniqueDates, overlayUrls]);
 
   console.log('Globe URL:', gibsGlobeUrl, 'Date:', displayDate, 'Zoom:', globeZoom);
 
   // Create tour steps with state setters
   const tourSteps = useMemo(
-    () => createFireGlobeTour(setIsStatsCollapsed, setIsRegionCollapsed, setIsTimelineCollapsed, setHighlightedPointIndex),
-    []
+    () => createFireGlobeTour(
+      setIsStatsCollapsed,
+      setIsRegionCollapsed,
+      setIsTimelineCollapsed,
+      setHighlightedPointIndex,
+      setCurrentDateIndex,
+      setVisualizationMode,
+      setSelectedLayerId,
+      setShowCOLayer,
+      setTimeGrouping,
+      globeRef,
+      uniqueDates
+    ),
+    [uniqueDates]
   );
 
   // Auto-start tour on first load
@@ -303,8 +343,18 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     if (allFireData?.features) {
       const dates = [...new Set(allFireData.features.map((f) => f.properties.acq_date))].sort();
       setUniqueDates(dates);
-      setCurrentDateIndex(0);
-      // Don't auto-start - wait for user to click play
+      
+      // Set initial date to 2004-07-22 if available
+      const targetDate = '2004-07-22';
+      const targetIndex = dates.indexOf(targetDate);
+      
+      if (targetIndex !== -1) {
+        setCurrentDateIndex(targetIndex);
+        console.log('🎯 Set initial date to:', targetDate);
+      } else {
+        setCurrentDateIndex(0);
+        console.log('⚠️ Target date not found, using first available:', dates[0]);
+      }
     }
   }, [allFireData]);
 
@@ -626,6 +676,13 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
             className="aerosol-toggle"
           />
           <IconButton
+            icon={<span className="text-sm">💨</span>}
+            onClick={() => setShowCOLayer(!showCOLayer)}
+            variant={showCOLayer ? "default" : "outline"}
+            title={showCOLayer ? 'Hide CO Layer' : 'Show CO Layer'}
+            className="co-toggle"
+          />
+          <IconButton
             icon={<HelpCircle />}
             onClick={() => setShowTour(true)}
             variant="default"
@@ -672,6 +729,17 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
           ref={globeRef}
           globeImageUrl={gibsGlobeUrl}
           backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+          onGlobeReady={() => {
+            if (globeRef.current) {
+              // Set initial view to Amazon region coordinates
+              globeRef.current.pointOfView({
+                lat: -4.9317,
+                lng: -58.3651,
+                altitude: 2.5,
+              }, 2000);
+              console.log('🌍 Globe ready - positioned at Amazon region');
+            }
+          }}
           onZoom={(coords: any) => {
             // Update zoom level for dynamic resolution
             // coords.altitude ranges from ~1.5 (zoomed out) to ~0.1 (zoomed in)

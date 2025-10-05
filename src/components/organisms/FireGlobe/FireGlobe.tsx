@@ -466,19 +466,9 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   const currentDate = useMemo(() => {
     if (!uniqueDates[currentDateIndex]) return 'N/A';
     
-    if (timeGrouping === 'daily') {
-      return uniqueDates[currentDateIndex];
-    }
-    
-    // Calculate date range for grouped periods
-    const step = timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
-    const startDate = uniqueDates[currentDateIndex];
-    const endIndex = Math.min(currentDateIndex + step - 1, uniqueDates.length - 1);
-    const endDate = uniqueDates[endIndex];
-    
-    if (startDate === endDate) return startDate;
-    return `${startDate} - ${endDate}`;
-  }, [uniqueDates, currentDateIndex, timeGrouping]);
+    // Always show only the start date of the period
+    return uniqueDates[currentDateIndex];
+  }, [uniqueDates, currentDateIndex]);
   
   const currentCount = useMemo(() => {
     if (!allFireData?.features || !uniqueDates[currentDateIndex]) return 0;

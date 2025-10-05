@@ -69,31 +69,31 @@ const instruments = [
     id: 'MODIS',
     name: 'MODIS (Moderate Resolution Imaging Spectroradiometer)',
     description: 'MODIS views the entire Earth\'s surface every 1 to 2 days, acquiring data in 36 spectral bands. Its data improves our understanding of global dynamics and processes occurring on the land, in the oceans, and in the lower atmosphere.',
-    position: { top: '55%', left: '52%' },
+    position: { top: '50%', left: '52%' },
   },
   {
     id: 'ASTER',
     name: 'ASTER (Advanced Spaceborne Thermal Emission and Reflection Radiometer)',
     description: 'A cooperative effort between NASA and Japan, ASTER creates high-resolution maps of land surface temperature, reflectance, and elevation. It is used for monitoring glaciers, volcanoes, and coral reefs.',
-    position: { top: '54%', left: '47%' },
+    position: { top: '47%', left: '45%' },
   },
   {
     id: 'MISR',
     name: 'MISR (Multi-angle Imaging SpectroRadiometer)',
     description: 'MISR has nine cameras that view Earth at different angles simultaneously. It provides unique data on atmospheric particles (aerosols), cloud properties, and land surface characteristics.',
-    position: { top: '59%', left: '47%' },
+    position: { top: '57%', left: '45%' },
   },
   {
     id: 'MOPITT',
     name: 'MOPITT (Measurements of Pollution in the Troposphere)',
     description: 'MOPITT measures the distribution and transport of carbon monoxide and methane in the troposphere. This data helps scientists track the sources and movement of air pollution on a global scale.',
-    position: { top: '50%', left: '51%' },
+    position: { top: '48%', left: '49%' },
   },
   {
     id: 'CERES',
     name: 'CERES (Clouds and the Earth\'s Radiant Energy System)',
     description: 'CERES measures the total reflected solar radiation and emitted thermal radiation from the Earth. It helps scientists understand the planet\'s energy balance, which is crucial for climate studies.',
-    position: { top: '45%', left: '51%' },
+    position: { top: '43%', left: '49%' },
   },
 ];
 
@@ -107,11 +107,6 @@ export const SatellitePage = () => {
   const [currentTourStep, setCurrentTourStep] = useState(0);
   const [showTour, setShowTour] = useState(true);
   const [isTourActive, setIsTourActive] = useState(true);
-  
-  const [debugMode, setDebugMode] = useState(false);
-  const [clickedCoordinates, setClickedCoordinates] = useState<[number, number, number] | null>(null);
-  const [cameraInfo, setCameraInfo] = useState<any>(null);
-  const [mousePosition, setMousePosition] = useState<{ x: number; y: number; coords3D: [number, number, number] | null }>({ x: 0, y: 0, coords3D: null });
   
   // Control point visibility during transitions
   const [showInstrumentPoint, setShowInstrumentPoint] = useState(true);
@@ -302,94 +297,7 @@ export const SatellitePage = () => {
           
           startTrackingInstruments(api);
           
-          // Event listener para capturar informações da câmera continuamente
-          const updateCameraInfo = () => {
-            api.getCameraLookAt((err: any, camera: any) => {
-              if (!err && camera) {
-                setCameraInfo({
-                  position: camera.position,
-                  target: camera.target,
-                });
-              }
-            });
-          };
-          
-          // Atualizar info da câmera a cada 500ms
-          const cameraInterval = setInterval(updateCameraInfo, 500);
-          
-          // Event listener para rastrear o mouse em tempo real
-          api.addEventListener('mousemove', (event: any) => {
-            const mouseX = event.clientX || 0;
-            const mouseY = event.clientY || 0;
-            
-            if (debugMode) {
-              console.log('🖱️ Mouse Event:', { mouseX, mouseY, has3D: !!event.position3D });
-            }
-            
-            // Capturar coordenadas 3D do ponto onde o mouse está
-            if (event.position3D && event.position3D.length === 3) {
-              const coords3D: [number, number, number] = [
-                parseFloat(event.position3D[0].toFixed(3)),
-                parseFloat(event.position3D[1].toFixed(3)),
-                parseFloat(event.position3D[2].toFixed(3))
-              ];
-              
-              if (debugMode) {
-                console.log('🎯 3D Coords found:', coords3D);
-              }
-              
-              // Converter 3D para 2D (coordenadas de tela em %)
-              api.getWorldToScreenCoordinates(coords3D, (err: any, pos2D: any) => {
-                if (!err && pos2D && iframeRef.current) {
-                  const rect = iframeRef.current.getBoundingClientRect();
-                  const screenX = parseFloat(((pos2D[0] / rect.width) * 100).toFixed(2));
-                  const screenY = parseFloat(((pos2D[1] / rect.height) * 100).toFixed(2));
-                  
-                  if (debugMode) {
-                    console.log('📍 Screen Position:', { screenX, screenY });
-                  }
-                  
-                  setMousePosition({ 
-                    x: screenX, 
-                    y: screenY, 
-                    coords3D: coords3D 
-                  });
-                } else {
-                  if (debugMode) {
-                    console.log('⚠️ Conversion failed, using pixel position');
-                  }
-                  setMousePosition({ x: mouseX, y: mouseY, coords3D: coords3D });
-                }
-              });
-            } else {
-              // Sem coordenadas 3D - mouse não está sobre o modelo
-              setMousePosition({ x: mouseX, y: mouseY, coords3D: null });
-            }
-          });
-          
-          // Event listener para capturar cliques no modelo 3D
-          api.addEventListener('click', (event: any) => {
-            if (debugMode) {
-              console.log('🎯 Click Event:', event);
-              
-              // Capturar coordenadas 3D do clique
-              if (event.position3D && event.position3D.length === 3) {
-                const coords: [number, number, number] = [
-                  parseFloat(event.position3D[0].toFixed(3)),
-                  parseFloat(event.position3D[1].toFixed(3)),
-                  parseFloat(event.position3D[2].toFixed(3))
-                ];
-                setClickedCoordinates(coords);
-                console.log('📍 3D Coordinates:', coords);
-                console.log('📋 Copy this:', `'INSTRUMENT': [${coords[0]}, ${coords[1]}, ${coords[2]}],`);
-              }
-            }
-          });
-          
-          // Cleanup
-          return () => {
-            clearInterval(cameraInterval);
-          };
+          // No debugging listeners needed
         });
       },
       error: () => {
@@ -493,39 +401,10 @@ export const SatellitePage = () => {
           title="NASA EOS AM-1—Terra Satellite"
           allowFullScreen
           allow="autoplay; fullscreen; xr-spatial-tracking"
-          className={`w-full h-full ${debugMode ? 'cursor-crosshair' : ''}`}
+          className="w-full h-full"
           id="api-frame"
           frameBorder="0"
         />
-        
-        {/* Debug overlay - Mouse coordinates display */}
-        {debugMode && mousePosition.coords3D && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute pointer-events-none z-[20]"
-            style={{
-              left: `${mousePosition.x}px`,
-              top: `${mousePosition.y}px`,
-              transform: 'translate(15px, -30px)',
-            }}
-          >
-            <div className="bg-cyan-500/95 backdrop-blur-sm border-2 border-cyan-300 rounded-lg px-3 py-2 shadow-2xl shadow-cyan-500/50">
-              <p className="text-white font-mono text-xs font-bold whitespace-nowrap">
-                [{mousePosition.coords3D[0]}, {mousePosition.coords3D[1]}, {mousePosition.coords3D[2]}]
-              </p>
-            </div>
-            {/* Pointer */}
-            <div 
-              className="absolute w-3 h-3 bg-cyan-500 border-2 border-cyan-300 rounded-full"
-              style={{
-                left: '-15px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-              }}
-            />
-          </motion.div>
-        )}
 
         {/* Dark overlay for first 2 tour steps */}
         {showTour && currentTourStep < 2 && (
@@ -558,8 +437,8 @@ export const SatellitePage = () => {
                 ? `${instrumentPositions[activeInstrument.id].x}%` 
                 : instruments.find(i => i.id === activeInstrument.id)?.position.left,
               transform: 'translate(-50%, -50%)',
-              width: '64px',
-              height: '64px',
+              width: '100px',
+              height: '100px',
             }}
           >
             {/* Círculo externo rotativo com gradiente de opacidade */}
@@ -686,136 +565,6 @@ export const SatellitePage = () => {
             </motion.div>
           </div>
         )}
-
-        {/* Debug Mode Controls */}
-        <div className="fixed top-4 left-4 z-[10001] flex flex-col gap-2">
-          {/* Toggle Debug Button */}
-          <button
-            onClick={() => setDebugMode(!debugMode)}
-            className={`px-4 py-2 rounded-lg backdrop-blur-sm border-2 transition-all duration-300 font-spartan font-bold text-sm shadow-lg ${
-              debugMode
-                ? 'bg-green-500/90 border-green-400 text-white shadow-green-500/50 animate-pulse'
-                : 'bg-black/80 border-white/30 text-white/70 hover:text-white hover:border-white/50'
-            }`}
-          >
-            {debugMode ? '🔍 DEBUG MODE ON' : '🔍 Enable Debug'}
-          </button>
-          
-          {/* Debug Panel */}
-          {debugMode && (
-            <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              className="bg-black/95 backdrop-blur-md border-2 border-green-400 rounded-xl p-4 max-w-md shadow-2xl shadow-green-500/20"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-green-400/30">
-                <h3 className="text-green-400 font-spartan font-bold text-sm flex items-center gap-2">
-                  <span className="animate-pulse">●</span>
-                  SATELLITE DEBUGGER
-                </h3>
-                <button
-                  onClick={() => setDebugMode(false)}
-                  className="text-white/50 hover:text-white transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Instructions */}
-              <div className="bg-blue-500/10 border border-blue-400/30 rounded-lg p-2 mb-3">
-                <p className="text-blue-300 text-xs font-poppins">
-                  💡 <strong>How to use:</strong> Move mouse over the satellite to see coordinates in real-time. Click to capture.
-                </p>
-              </div>
-
-              {/* Mouse Position Tracker */}
-              <div className="mb-3 space-y-2">
-                <p className="text-cyan-400 font-mono text-xs font-bold mb-1">👁️ MOUSE TRACKER:</p>
-                <div className="bg-cyan-500/10 border border-cyan-400/30 rounded p-2 space-y-2">
-                  {/* 2D Screen Position (X, Y in %) - Always show */}
-                  <div className={`${mousePosition.coords3D ? 'bg-cyan-600/20 border border-cyan-400/50' : 'bg-gray-600/10 border border-gray-500/30'} rounded p-2`}>
-                    <span className={`text-xs font-mono font-bold block mb-1 ${mousePosition.coords3D ? 'text-cyan-200' : 'text-gray-400'}`}>
-                      📍 2D Screen Position:
-                    </span>
-                    <p className={`font-mono text-sm ml-2 font-bold ${mousePosition.coords3D ? 'text-white' : 'text-gray-400'}`}>
-                      X: {typeof mousePosition.x === 'number' ? mousePosition.x.toFixed(2) : mousePosition.x}% | Y: {typeof mousePosition.y === 'number' ? mousePosition.y.toFixed(2) : mousePosition.y}%
-                    </p>
-                  </div>
-                  
-                  {/* 3D World Coordinates - Only when hovering model */}
-                  {mousePosition.coords3D ? (
-                    <div className="bg-green-500/10 border border-green-400/30 rounded p-2">
-                      <span className="text-green-300 text-xs font-mono font-bold block mb-1">🎯 3D World Coords:</span>
-                      <p className="text-white font-mono text-xs ml-2 font-bold">
-                        [{mousePosition.coords3D[0]}, {mousePosition.coords3D[1]}, {mousePosition.coords3D[2]}]
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-gray-600/10 border border-gray-500/30 rounded p-2">
-                      <span className="text-gray-400 text-xs font-mono">🎯 3D World Coords:</span>
-                      <p className="text-gray-500 font-mono text-xs ml-2 italic">
-                        Hover directly over satellite model
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Camera Information */}
-              {cameraInfo && (
-                <div className="mb-3 space-y-2">
-                  <p className="text-yellow-400 font-mono text-xs font-bold mb-1">� CAMERA INFO:</p>
-                  <div className="bg-yellow-500/10 border border-yellow-400/30 rounded p-2 space-y-1">
-                    <div>
-                      <span className="text-yellow-300 text-xs font-mono">Position:</span>
-                      <p className="text-white font-mono text-xs ml-2">
-                        [{cameraInfo.position[0].toFixed(2)}, {cameraInfo.position[1].toFixed(2)}, {cameraInfo.position[2].toFixed(2)}]
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-yellow-300 text-xs font-mono">Target:</span>
-                      <p className="text-white font-mono text-xs ml-2">
-                        [{cameraInfo.target[0].toFixed(2)}, {cameraInfo.target[1].toFixed(2)}, {cameraInfo.target[2].toFixed(2)}]
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Clicked Coordinates */}
-              {clickedCoordinates && (
-                <div className="space-y-2">
-                  <p className="text-green-400 font-mono text-xs font-bold mb-1">📍 CLICKED 3D POSITION:</p>
-                  <div className="bg-green-500/10 border border-green-400/30 rounded p-2">
-                    <p className="text-white font-mono text-sm text-center font-bold">
-                      [{clickedCoordinates[0]}, {clickedCoordinates[1]}, {clickedCoordinates[2]}]
-                    </p>
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        `'INSTRUMENT': [${clickedCoordinates[0]}, ${clickedCoordinates[1]}, {clickedCoordinates[2]}],`
-                      );
-                    }}
-                    className="w-full px-3 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-white font-spartan font-bold transition-all duration-300 hover:scale-105 shadow-lg shadow-green-500/50"
-                  >
-                    📋 Copy Instrument Code
-                  </button>
-                  
-                  <button
-                    onClick={() => setClickedCoordinates(null)}
-                    className="w-full px-2 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 rounded text-red-300 text-xs font-spartan transition-colors"
-                  >
-                    Clear
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </div>
 
         {/* Final message and BEGIN ADVENTURE button */}
         {!showTour && (

@@ -3,7 +3,17 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GuideCharacter } from '@molecules/GuideCharacter';
 import backgroundHome from "../../assets/images/background_home.jpg";
-import satelliteImage from '../../assets/images/satellite.png';
+import satelliteGif from '../../assets/gifs/Clipper.gif';
+import satelliteStatic from '../../assets/images/satellite.png';
+import audioStep1 from '../../assets/audios/satellite_A01.mp3';
+import audioStep2 from '../../assets/audios/satellite_A02.mp3';
+import audioStep3 from '../../assets/audios/satellite_A03.mp3';
+import audioStep4 from '../../assets/audios/satellite_A04.mp3';
+import audioStep5 from '../../assets/audios/satellite_A05.mp3';
+import audioStep6 from '../../assets/audios/satellite_A06.mp3';
+import audioStep7 from '../../assets/audios/satellite_A07.mp3';
+import audioStep8 from '../../assets/audios/satellite_A08.mp3';
+import audioConclusion from '../../assets/audios/satellite_A09.mp3';
 
 // Declaração global para a API do Sketchfab
 declare global {
@@ -59,31 +69,31 @@ const instruments = [
     id: 'MODIS',
     name: 'MODIS (Moderate Resolution Imaging Spectroradiometer)',
     description: 'MODIS views the entire Earth\'s surface every 1 to 2 days, acquiring data in 36 spectral bands. Its data improves our understanding of global dynamics and processes occurring on the land, in the oceans, and in the lower atmosphere.',
-    position: { top: '35%', left: '52%' },
+    position: { top: '55%', left: '52%' },
   },
   {
     id: 'ASTER',
     name: 'ASTER (Advanced Spaceborne Thermal Emission and Reflection Radiometer)',
     description: 'A cooperative effort between NASA and Japan, ASTER creates high-resolution maps of land surface temperature, reflectance, and elevation. It is used for monitoring glaciers, volcanoes, and coral reefs.',
-    position: { top: '48%', left: '58%' },
+    position: { top: '54%', left: '47%' },
   },
   {
     id: 'MISR',
     name: 'MISR (Multi-angle Imaging SpectroRadiometer)',
     description: 'MISR has nine cameras that view Earth at different angles simultaneously. It provides unique data on atmospheric particles (aerosols), cloud properties, and land surface characteristics.',
-    position: { top: '55%', left: '48%' },
+    position: { top: '59%', left: '47%' },
   },
   {
     id: 'MOPITT',
     name: 'MOPITT (Measurements of Pollution in the Troposphere)',
     description: 'MOPITT measures the distribution and transport of carbon monoxide and methane in the troposphere. This data helps scientists track the sources and movement of air pollution on a global scale.',
-    position: { top: '42%', left: '42%' },
+    position: { top: '50%', left: '51%' },
   },
   {
     id: 'CERES',
     name: 'CERES (Clouds and the Earth\'s Radiant Energy System)',
     description: 'CERES measures the total reflected solar radiation and emitted thermal radiation from the Earth. It helps scientists understand the planet\'s energy balance, which is crucial for climate studies.',
-    position: { top: '38%', left: '62%' },
+    position: { top: '45%', left: '51%' },
   },
 ];
 
@@ -98,7 +108,6 @@ export const SatellitePage = () => {
   const [showTour, setShowTour] = useState(true);
   const [isTourActive, setIsTourActive] = useState(true);
   
-  // Debug mode for coordinate adjustment
   const [debugMode, setDebugMode] = useState(false);
   const [clickedCoordinates, setClickedCoordinates] = useState<[number, number, number] | null>(null);
   const [cameraInfo, setCameraInfo] = useState<any>(null);
@@ -106,6 +115,39 @@ export const SatellitePage = () => {
   
   // Control point visibility during transitions
   const [showInstrumentPoint, setShowInstrumentPoint] = useState(true);
+
+  // Audio and avatar states
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [useAnimatedAvatar, setUseAnimatedAvatar] = useState(false);
+  const [conclusionAudioPlayed, setConclusionAudioPlayed] = useState(false);
+  const [useConclusionAnimatedAvatar, setUseConclusionAnimatedAvatar] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  // Array de áudios para cada etapa
+  const stepAudios = [
+    audioStep1, // Etapa 0/8
+    audioStep2, // Etapa 1/8
+    audioStep3, // Etapa 2/8
+    audioStep4, // Etapa 3/8
+    audioStep5, // Etapa 4/8
+    audioStep6, // Etapa 5/8
+    audioStep7, // Etapa 6/8
+    audioStep8, // Etapa 7/8
+  ];
+
+  // Track initial mount
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // Handle audio end - Switch to static avatar
+  const handleAudioEnd = () => {
+    if (showTour) {
+      setUseAnimatedAvatar(false);
+    } else {
+      setUseConclusionAnimatedAvatar(false);
+    }
+  };
 
   // Handle tour navigation
   const handleNextStep = () => {
@@ -152,6 +194,73 @@ export const SatellitePage = () => {
       }, 100);
     }, 500);
   }, [currentTourStep, isTourActive]);
+
+  // Audio playback effect - Aggressive autoplay with retries
+  useEffect(() => {
+    if (!showTour) return;
+    
+    const playAudio = async () => {
+      if (audioRef.current) {
+        // Reset avatar to animated when step changes
+        setUseAnimatedAvatar(true);
+        
+        try {
+          // Special delay for first step to ensure proper initialization
+          if (currentTourStep === 0 && hasMounted) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+          
+          await audioRef.current.play();
+        } catch (error) {
+          // Retry 1: After 50ms
+          setTimeout(async () => {
+            try {
+              await audioRef.current?.play();
+            } catch (retryError) {
+              // Retry 2: After 100ms
+              setTimeout(async () => {
+                try {
+                  await audioRef.current?.play();
+                } catch (finalError) {
+                  // Silent fail
+                }
+              }, 100);
+            }
+          }, 50);
+        }
+      }
+    };
+
+    playAudio();
+  }, [currentTourStep, hasMounted, showTour]);
+
+  // Conclusion audio effect
+  useEffect(() => {
+    if (!showTour && !conclusionAudioPlayed) {
+      const playConclusion = async () => {
+        if (audioRef.current) {
+          setUseConclusionAnimatedAvatar(true);
+          setConclusionAudioPlayed(true);
+          
+          try {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await audioRef.current.play();
+          } catch (error) {
+            // Retry after 100ms
+            setTimeout(async () => {
+              try {
+                await audioRef.current?.play();
+              } catch (retryError) {
+                // Silent fail
+              }
+            }, 100);
+          }
+        }
+      };
+
+      playConclusion();
+    }
+  }, [showTour, conclusionAudioPlayed]);
 
   // Carregar o script da API do Sketchfab
   useEffect(() => {
@@ -349,7 +458,7 @@ export const SatellitePage = () => {
       'MODIS': [-8.04, 5.28, -1.84],
       'ASTER': [-1.7, 6.39, -6.94],
       'MISR': [-4.11, -5.28, -7.18],
-      'MOPITT': [-0.13, -2.35, -9.38],
+      'MOPITT': [5.04, 5.71, -5.95],
       'CERES': [7.57, 2.24, -5.58],
     };
 
@@ -449,35 +558,40 @@ export const SatellitePage = () => {
                 ? `${instrumentPositions[activeInstrument.id].x}%` 
                 : instruments.find(i => i.id === activeInstrument.id)?.position.left,
               transform: 'translate(-50%, -50%)',
-              width: '48px',
-              height: '48px',
+              width: '64px',
+              height: '64px',
             }}
           >
-            {/* Anel pulsante grande */}
+            {/* Círculo externo rotativo com gradiente de opacidade */}
             <motion.div
-              className="absolute rounded-full border-2"
+              className="absolute rounded-full"
               animate={{
-                scale: [1, 2.5, 1],
-                opacity: [0.6, 0, 0.6],
+                rotate: 360,
               }}
               transition={{
-                duration: 2,
+                duration: 3,
                 repeat: Infinity,
-                ease: "easeInOut",
+                ease: "linear",
               }}
               style={{
                 width: '100%',
                 height: '100%',
-                backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                borderColor: '#ffffff',
+                border: '3px solid',
+                borderColor: 'transparent',
+                borderTopColor: 'rgba(255, 255, 255, 1)',
+                borderRightColor: 'rgba(255, 255, 255, 0.6)',
+                borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+                borderLeftColor: 'rgba(255, 255, 255, 0.1)',
               }}
             />
-            {/* Ponto central destacado */}
+            {/* Círculo interno fixo semi-transparente */}
             <div 
-              className="absolute w-6 h-6 rounded-full animate-pulse"
+              className="absolute rounded-full"
               style={{
-                backgroundColor: '#ffffff',
-                boxShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 0 0 4px rgba(255, 255, 255, 0.5)',
+                width: '70%',
+                height: '70%',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                border: '2px solid rgba(255, 255, 255, 0.4)',
               }}
             />
           </motion.div>
@@ -492,7 +606,7 @@ export const SatellitePage = () => {
             className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
           >
             <GuideCharacter
-              imageUrl={satelliteImage}
+              imageUrl={useAnimatedAvatar ? satelliteGif : satelliteStatic}
               message={tourSteps[currentTourStep].message}
               isActive={isTourActive}
               showMessage
@@ -714,7 +828,7 @@ export const SatellitePage = () => {
               className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
             >
               <GuideCharacter
-                imageUrl={satelliteImage}
+                imageUrl={useConclusionAnimatedAvatar ? satelliteGif : satelliteStatic}
                 message="Now that you've seen me, let me show you what I see."
                 isActive={true}
                 showMessage
@@ -757,6 +871,14 @@ export const SatellitePage = () => {
             </motion.div>
           </>
         )}
+
+        {/* Audio element */}
+        <audio
+          ref={audioRef}
+          src={showTour ? stepAudios[currentTourStep] : audioConclusion}
+          key={showTour ? currentTourStep : 'conclusion'}
+          onEnded={handleAudioEnd}
+        />
       </div>
     </div>
   );

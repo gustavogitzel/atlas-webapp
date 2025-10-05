@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GuideCharacter } from '@molecules/GuideCharacter';
 import backgroundHome from "../../assets/images/background_home.jpg";
@@ -389,8 +389,18 @@ export const SatellitePage = () => {
           </motion.div>
         )}
 
-        {/* Overlay bloqueador durante o tour */}
-        {isTourActive && (
+        {/* Dark overlay for first 2 tour steps */}
+        {showTour && currentTourStep < 2 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/85 z-[9998]"
+          />
+        )}
+
+        {/* Overlay bloqueador durante o tour - desabilitado na etapa 8/8 */}
+        {isTourActive && currentTourStep < tourSteps.length - 1 && (
           <div className="absolute inset-0 bg-transparent cursor-not-allowed z-[5]" />
         )}
 
@@ -444,42 +454,6 @@ export const SatellitePage = () => {
           </motion.div>
         )}
 
-
-
-        {/* Modal for instrument details - Canto superior direito */}
-        <AnimatePresence>
-          {activeInstrument && (
-            <motion.div
-              initial={{ opacity: 0, x: 100, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 100, scale: 0.9 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute top-4 right-4 max-w-md w-[90%] md:w-auto pointer-events-auto z-[100]"
-            >
-              <div className="bg-black/90 backdrop-blur-lg rounded-xl p-5 border border-white/20 shadow-2xl">
-                <div className="flex justify-between items-start mb-3">
-                  <h2 className="text-lg font-bold text-white font-spartan pr-4">
-                    {activeInstrument.name}
-                  </h2>
-                  {!isTourActive && (
-                    <button
-                      onClick={() => setActiveInstrument(null)}
-                      className="text-white/60 hover:text-white transition-colors p-1 flex-shrink-0"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                <p className="text-white/80 font-poppins leading-relaxed text-sm">
-                  {activeInstrument.description}
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Guide Character with Tour */}
         {showTour && (
           <motion.div
@@ -507,9 +481,11 @@ export const SatellitePage = () => {
             className="fixed bottom-8 right-4 z-[10001] flex flex-col gap-3 pointer-events-auto items-end"
           >
             {/* Info Badge */}
-            <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg px-5 py-2 text-center">
-              <p className="text-blue-300 text-xs font-poppins">
-                🔒 Complete the tour to unlock the exploration features
+            <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg px-5 py-2 text-center w-[380px]">
+              <p className="text-blue-300 text-xs font-poppins whitespace-nowrap">
+                {currentTourStep === tourSteps.length - 1
+                  ? '✨ Exploration features unlocked!'
+                  : '🔒 Complete the tour to unlock the exploration features'}
               </p>
             </div>
 

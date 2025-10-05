@@ -26,6 +26,10 @@ export interface FireFeature {
     coordinates: [number, number]; // [lon, lat]
   };
   properties: FireProperties;
+  // Optional cluster data for detail modal
+  count?: number;
+  radius?: number;
+  fires?: FireDetail[];
 }
 
 export interface FirePointsResponse {

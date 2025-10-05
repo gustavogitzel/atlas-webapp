@@ -1,17 +1,26 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import Globe from 'react-globe.gl';
-import { motion } from 'framer-motion';
-import { Filter, Database } from 'lucide-react';
+import { Filter, Map, HelpCircle, ChevronDown, ChevronUp, Flame, MapPin, Clock, Play, Pause, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { useFirePoints, useFireStatistics } from '@hooks/useFireData';
-import { StatCard } from '@atoms/StatCard';
+import { useImagePreloader } from '@hooks/useImagePreloader';
 import { IconButton } from '@atoms/IconButton';
+import { CacheIndicator } from '@atoms/CacheIndicator';
+import { generatePointTooltip } from '@atoms/PointTooltip';
+import { LoadingScreen } from '@molecules/LoadingScreen';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { FilterPanel } from '@molecules/FilterPanel';
 import { FireDetailModal } from '@molecules/FireDetailModal';
-import { fetchFireDetails } from '@/services/fireAPI';
+import { FireStats } from '@molecules/FireStats';
+import { RegionSelector } from '@molecules/RegionSelector';
+import { LayerSelector } from '@molecules/LayerSelector';
+import { GuidedTour } from '@organisms/GuidedTour';
 import { FIRE_GLOBE_CONFIG, getPointColor, getPointAltitude, getPointRadius } from './FireGlobeConfig';
 import { REGION_OPTIONS } from '@/data/amazonRegion';
-import type { FireFeature, FireDetailsResponse } from '@/types/fire';
+import { createFireGlobeTour } from '@/data/fireGlobeTour';
+import { getLayerUrl, getDefaultLayer, GLOBE_LAYERS } from '@/config/globeLayers';
+import { composeGlobeTexture } from '@/utils/textureComposer';
+import satelliteImage from '@/assets/images/satellite.png';
+import type { FireFeature } from '@/types/fire';
 
 /**
  * FireGlobe Organism Component
@@ -22,39 +31,243 @@ export interface FireGlobeProps {
   maxPoints?: number;
   minConfidence?: number;
 }
-
 export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobeProps) => {
   // Data fetching with React Query
   const { data: allFireData, isLoading, isFetching } = useFirePoints({ maxPoints, minConfidence });
-  const { data: stats, isLoading: loadingStats } = useFireStatistics();
+  const { isLoading: loadingStats } = useFireStatistics();
 
-  // State management
-  const [filteredData, setFilteredData] = useState<FireFeature[] | null>(null);
-  const [selectedPoint, setSelectedPoint] = useState<FireDetailsResponse | null>(null);
+  // UI state
+  const [selectedPoint, setSelectedPoint] = useState<FireFeature | null>(null);
   const [showModal, setShowModal] = useState(false);
+  
+  // Globe ref for accessing globe methods
+  const globeRef = useRef<any>(null);
 
   // Timeline state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
   const [uniqueDates, setUniqueDates] = useState<string[]>([]);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1000);
+  // Match playback speed with point transition duration for synchronized animation
+  const [playbackSpeed, setPlaybackSpeed] = useState(FIRE_GLOBE_CONFIG.animation.pointTransitionDuration);
+  const [timeGrouping, setTimeGrouping] = useState<'daily' | '5-days' | 'weekly' | 'monthly'>('5-days');
+  const [filteredData, setFilteredData] = useState<FireFeature[]>([]);
 
   // Filter state
   const [selectedSatellite, setSelectedSatellite] = useState('Terra');
   const [filterMinConfidence, setFilterMinConfidence] = useState(70);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState('amazon');
+  const [selectedRegion, setSelectedRegion] = useState('');
+  
+  // Visualization mode
+  const [visualizationMode, setVisualizationMode] = useState<'points' | 'heatmap'>('points');
+  
+  // Base layer selection - Default to Terra True Color
+  const [selectedLayerId, setSelectedLayerId] = useState('terra-truecolor');
+  
+  // Aerosol overlay layer
+  const [showAerosolLayer, setShowAerosolLayer] = useState(true);
+  
+  // Zoom level for dynamic resolution
+  const [globeZoom, setGlobeZoom] = useState(1);
+  
+  // Guided tour
+  const [showTour, setShowTour] = useState(false);
+  const [highlightedPointIndex, setHighlightedPointIndex] = useState<number | null>(null);
+  
+  // Collapsible states
+  const [isStatsCollapsed, setIsStatsCollapsed] = useState(true);
+  const [isRegionCollapsed, setIsRegionCollapsed] = useState(true);
+  const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(true);
+
+  // Auto-close other components on mobile when one opens
+  const handleStatsToggle = () => {
+    if (isStatsCollapsed && window.innerWidth < 768) {
+      setIsRegionCollapsed(true);
+      setIsTimelineCollapsed(true);
+    }
+    setIsStatsCollapsed(!isStatsCollapsed);
+  };
+
+  const handleRegionToggle = () => {
+    if (isRegionCollapsed && window.innerWidth < 768) {
+      setIsStatsCollapsed(true);
+      setIsTimelineCollapsed(true);
+    }
+    setIsRegionCollapsed(!isRegionCollapsed);
+  };
+
+  const handleTimelineToggle = () => {
+    if (isTimelineCollapsed && window.innerWidth < 768) {
+      setIsStatsCollapsed(true);
+      setIsRegionCollapsed(true);
+    }
+    setIsTimelineCollapsed(!isTimelineCollapsed);
+  };
 
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Extract unique dates from data
+  // Get GIBS imagery for the current date with validation
+  const currentGIBSDate = useMemo(() => {
+    const dateStr = uniqueDates[currentDateIndex] || new Date().toISOString().split('T')[0];
+    const date = new Date(dateStr);
+    const now = new Date();
+    
+    // Ensure date is not in the future and not before MODIS Terra start date (2000-02-24)
+    if (date > now) {
+      return now.toISOString().split('T')[0];
+    }
+    
+    const minDate = new Date('2020-02-24');
+    if (date < minDate) {
+      return minDate.toISOString().split('T')[0];
+    }
+    
+    return dateStr;
+  }, [uniqueDates, currentDateIndex]);
+
+  // Generate GIBS globe image URL for the current date and selected layer
+  // Use the end date of the current date range for better data availability
+  const displayDate = useMemo(() => {
+    if (!uniqueDates.length) return currentGIBSDate;
+    
+    // Get current date
+    const current = uniqueDates[currentDateIndex];
+    if (!current) return currentGIBSDate;
+    
+    // If there's a next date, use the day before it (end of current period)
+    // Otherwise use the current date
+    if (currentDateIndex < uniqueDates.length - 1) {
+      const nextDate = new Date(uniqueDates[currentDateIndex + 1]);
+      nextDate.setDate(nextDate.getDate() - 1);
+      return nextDate.toISOString().split('T')[0];
+    }
+    
+    return current;
+  }, [uniqueDates, currentDateIndex, currentGIBSDate]);
+
+  // Generate all possible image URLs for preloading
+  const imageUrls = useMemo(() => {
+    if (!uniqueDates.length) return [];
+    
+    const layer = GLOBE_LAYERS.find((l) => l.id === selectedLayerId) || getDefaultLayer();
+    
+    // Preload images for all available dates
+    // This enables instant transitions without fade effects
+    // Images are loaded in batches to avoid overwhelming the browser
+    return uniqueDates.map(date => getLayerUrl(layer, date, 1));
+  }, [uniqueDates, selectedLayerId]);
+
+  // Generate overlay URLs for all dates
+  const overlayUrls = useMemo(() => {
+    if (!showAerosolLayer || !uniqueDates.length) return undefined;
+    
+    return uniqueDates.map(dateStr => {
+      const date = new Date(dateStr);
+      const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      const formattedDate = lastDay.toISOString().split('T')[0];
+      
+      const baseUrl = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
+      const params = new URLSearchParams({
+        SERVICE: 'WMS',
+        REQUEST: 'GetMap',
+        layers: 'MISR_Aerosol_Optical_Depth_Avg_Green_Monthly',
+        version: '1.3.0',
+        crs: 'EPSG:4326',
+        transparent: 'true',
+        width: '2048',
+        height: '1024',
+        bbox: '-90,-180,90,180',
+        format: 'image/png',
+        time: formattedDate
+      });
+      
+      return `${baseUrl}?${params.toString()}`;
+    });
+  }, [uniqueDates, showAerosolLayer]);
+
+  // Check if images are already cached (from HomePage)
+  // If so, skip preloading to avoid duplicate work
+  const { getComposedUrl } = useImagePreloader(
+    imageUrls, 
+    10,
+    overlayUrls,
+    showAerosolLayer ? (base, overlay) => composeGlobeTexture(base, overlay, 0.3) : undefined
+  );
+
+  // Current globe texture URL
+  const [gibsGlobeUrl, setGibsGlobeUrl] = useState('');
+  
+  // Update globe URL when date/layer changes or aerosol is toggled
+  useEffect(() => {
+    const updateTexture = async () => {
+      const layer = GLOBE_LAYERS.find((l) => l.id === selectedLayerId) || getDefaultLayer();
+      const baseUrl = getLayerUrl(layer, displayDate, globeZoom);
+      
+      if (showAerosolLayer) {
+        // Get pre-composed URL from cache if available
+        const composedUrl = getComposedUrl(baseUrl);
+        if (composedUrl !== baseUrl) {
+          // Already composed in cache
+          setGibsGlobeUrl(composedUrl);
+        } else {
+          // Compose on-the-fly if not in cache
+          const dateIndex = uniqueDates.indexOf(displayDate);
+          const overlayUrl = overlayUrls?.[dateIndex];
+          const composed = await composeGlobeTexture(baseUrl, overlayUrl, 0.3);
+          setGibsGlobeUrl(composed);
+        }
+      } else {
+        // No aerosol - use base image only
+        setGibsGlobeUrl(baseUrl);
+      }
+    };
+    
+    updateTexture();
+  }, [displayDate, selectedLayerId, globeZoom, showAerosolLayer, getComposedUrl, overlayUrls, uniqueDates]);
+
+  console.log('Globe URL:', gibsGlobeUrl, 'Date:', displayDate, 'Zoom:', globeZoom);
+
+  // Create tour steps with state setters
+  const tourSteps = useMemo(
+    () => createFireGlobeTour(setIsStatsCollapsed, setIsRegionCollapsed, setIsTimelineCollapsed, setHighlightedPointIndex),
+    []
+  );
+
+  // Auto-start tour on first load
+  useEffect(() => {
+    // Small delay to ensure everything is loaded
+    setTimeout(() => {
+      setShowTour(true);
+    }, 1000);
+  }, []);
+
   useEffect(() => {
     if (allFireData?.features) {
       const dates = [...new Set(allFireData.features.map((f) => f.properties.acq_date))].sort();
       setUniqueDates(dates);
       setCurrentDateIndex(0);
+      // Don't auto-start - wait for user to click play
     }
   }, [allFireData]);
+
+  // Mark highlighted point
+  useEffect(() => {
+    if (filteredData && highlightedPointIndex !== null) {
+      const point = filteredData[highlightedPointIndex];
+      if (point) {
+        (point.properties as any)._highlighted = true;
+      }
+    }
+    
+    // Cleanup: remove highlight from all points when index changes
+    return () => {
+      if (filteredData) {
+        filteredData.forEach(p => {
+          delete (p.properties as any)._highlighted;
+        });
+      }
+    };
+  }, [highlightedPointIndex, filteredData]);
 
   // Filter data with multi-stage fade animation for previous days
   useEffect(() => {
@@ -108,16 +321,18 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     setFilteredData(enrichedData);
   }, [allFireData, currentDateIndex, selectedSatellite, filterMinConfidence, uniqueDates]);
 
-  // Playback control
+  // Playback control with GIF-like looping
   useEffect(() => {
     if (isPlaying) {
+      const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+      
       playIntervalRef.current = setInterval(() => {
         setCurrentDateIndex((prev) => {
+          // Loop back to start when reaching the end (GIF behavior)
           if (prev >= uniqueDates.length - 1) {
-            setIsPlaying(false);
-            return prev;
+            return 0; // Restart from beginning
           }
-          return prev + 1;
+          return Math.min(prev + step, uniqueDates.length - 1);
         });
       }, playbackSpeed);
     } else {
@@ -131,25 +346,50 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         clearInterval(playIntervalRef.current);
       }
     };
-  }, [isPlaying, playbackSpeed, uniqueDates.length]);
+  }, [isPlaying, playbackSpeed, uniqueDates.length, timeGrouping]);
 
   // Handle point click
-  const handlePointClick = async (point: FireFeature) => {
-    const lat = point.geometry.coordinates[1];
-    const lon = point.geometry.coordinates[0];
-
-    try {
-      const data = await fetchFireDetails(lat, lon, 0.05);
-      setSelectedPoint(data);
-      setShowModal(true);
-    } catch (error) {
-      console.error('Error loading fire details:', error);
-    }
+  const handlePointClick = (point: FireFeature) => {
+    setSelectedPoint(point);
+    setShowModal(true);
   };
 
-  // Memoized values
-  const currentDate = useMemo(() => uniqueDates[currentDateIndex] || 'N/A', [uniqueDates, currentDateIndex]);
-  const currentCount = useMemo(() => filteredData?.length || 0, [filteredData]);
+  // Memoized values with grouping support
+  const currentDate = useMemo(() => {
+    if (!uniqueDates[currentDateIndex]) return 'N/A';
+    
+    if (timeGrouping === 'daily') {
+      return uniqueDates[currentDateIndex];
+    }
+    
+    // Calculate date range for grouped periods
+    const step = timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+    const startDate = uniqueDates[currentDateIndex];
+    const endIndex = Math.min(currentDateIndex + step - 1, uniqueDates.length - 1);
+    const endDate = uniqueDates[endIndex];
+    
+    if (startDate === endDate) return startDate;
+    return `${startDate} - ${endDate}`;
+  }, [uniqueDates, currentDateIndex, timeGrouping]);
+  
+  const currentCount = useMemo(() => {
+    if (!allFireData?.features || !uniqueDates[currentDateIndex]) return 0;
+    
+    if (timeGrouping === 'daily') {
+      return filteredData?.length || 0;
+    }
+    
+    // Count fires across the grouped period
+    const step = timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+    const endIndex = Math.min(currentDateIndex + step - 1, uniqueDates.length - 1);
+    const dateRange = uniqueDates.slice(currentDateIndex, endIndex + 1);
+    
+    return allFireData.features.filter(f => 
+      dateRange.includes(f.properties.acq_date) &&
+      f.properties.satellite === selectedSatellite &&
+      f.properties.confidence >= filterMinConfidence
+    ).length;
+  }, [allFireData, filteredData, uniqueDates, currentDateIndex, timeGrouping, selectedSatellite, filterMinConfidence]);
   
   // Selected region polygon
   const selectedRegionPolygon = useMemo(() => {
@@ -158,104 +398,184 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     return regionOption?.region ? [regionOption.region] : [];
   }, [selectedRegion]);
 
-  // Loading state
+
+  // Loading state - only block on data loading, not images
   if (isLoading || loadingStats) {
     return (
-      <div className="flex items-center justify-center h-screen bg-black text-white text-2xl">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500 mx-auto mb-4" />
-          <p>Loading fire data...</p>
-          <p className="text-sm text-gray-400 mt-2">
-            {isFetching ? '🔄 Buscando dados...' : '💾 Carregando do cache...'}
-          </p>
-        </div>
-      </div>
+      <LoadingScreen
+        title="Loading Fire Data"
+        message={isFetching ? '🔄 Fetching data from API...' : '💾 Loading from cache...'}
+      />
     );
   }
 
   // Error state
   if (!allFireData || !allFireData.features || allFireData.features.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-black text-white text-2xl">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">⚠️ Nenhum dado carregado</p>
-          <p className="text-sm text-gray-400">Verifique se a API está online</p>
-        </div>
-      </div>
+      <LoadingScreen
+        title="⚠️ No Data Available"
+        message="Please check if the API is online or try again later"
+      />
     );
   }
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
-      {/* Stats Cards */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-3">
-        <div className="grid grid-cols-4 gap-3">
-          <StatCard
-            label="🔥 Total Fires"
-            value={stats?.total_detections || 0}
-            variant="fire"
-          />
-          <StatCard
-            label="📅 Current Date"
-            value={currentDate}
-            subtitle={`${currentCount} fires`}
-          />
-          <StatCard
-            label="🛰️ Satellite"
-            value={selectedSatellite}
-            variant="gradient"
-          />
-          <StatCard
-            label="⚡ Total FRP"
-            value={`${stats?.frp?.total?.toFixed(0) || 0} MW`}
-            variant="fire"
-          />
+      {/* Fire Stats - Separate on desktop (left), grouped on mobile (right) */}
+      {filteredData && filteredData.length > 0 && (
+        <div className="fire-stats-container hidden md:block absolute top-4 left-4 z-10 w-auto max-w-sm">
+          <div className="relative">
+            <button
+              onClick={handleStatsToggle}
+              className="absolute -top-2 -right-2 z-20 p-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white"
+            >
+              {isStatsCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            </button>
+            {!isStatsCollapsed && (
+              <FireStats
+                data={{
+                  totalDetections: currentCount,
+                  radius: 0.05,
+                  riskLevel: currentCount > 100 ? 'Critical' : currentCount > 50 ? 'High' : currentCount > 20 ? 'Medium' : 'Low',
+                  criticalFires: filteredData.filter(f => f.properties.frp > 100 && f.properties.confidence >= 80).length,
+                  avgFRP: filteredData.reduce((sum, f) => sum + f.properties.frp, 0) / filteredData.length,
+                  maxFRP: Math.max(...filteredData.map(f => f.properties.frp)),
+                  avgConfidence: filteredData.reduce((sum, f) => sum + f.properties.confidence, 0) / filteredData.length,
+                  highConfidenceCount: filteredData.filter(f => f.properties.confidence >= 80).length,
+                }}
+              />
+            )}
+            {isStatsCollapsed && (
+              <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-lg p-2 text-white text-xs font-bold flex items-center gap-2">
+                <Flame className="h-3 w-3 text-orange-500" />
+                Fire Stats
+              </div>
+            )}
+          </div>
         </div>
-        
-        {/* Region Selector */}
-        <div className="bg-black/80 backdrop-blur-lg border border-white/10 rounded-xl p-4">
-          <label className="text-xs text-gray-400 uppercase tracking-wide mb-2 block">
-            🌍 Region Highlight
-          </label>
-          <select
-            value={selectedRegion}
-            onChange={(e) => setSelectedRegion(e.target.value)}
-            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green-500 transition-colors"
-          >
-            {REGION_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value} className="bg-gray-900">
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Filter Button */}
-      <div className="absolute top-4 right-4 z-10">
-        <IconButton
-          icon={<Filter />}
-          onClick={() => setShowFilters(!showFilters)}
-          variant="ghost"
-        />
-      </div>
-
-      {/* Cache Indicator */}
-      {isFetching && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          className="absolute top-4 right-20 z-10 bg-blue-500/20 backdrop-blur-lg border border-blue-500/50 rounded-xl px-4 py-2 text-blue-300 text-sm flex items-center gap-2"
-        >
-          <Database className="w-4 h-4 animate-pulse" />
-          Atualizando cache...
-        </motion.div>
       )}
+
+      {/* All controls grouped on mobile (right side), separate on desktop */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col items-stretch gap-2">
+        {/* Fire Stats - Only on mobile */}
+        {filteredData && filteredData.length > 0 && (
+          <div className="fire-stats-container md:hidden w-auto">
+            <div className="relative">
+              <button
+                onClick={handleStatsToggle}
+                className="absolute -top-2 -right-2 z-20 p-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white"
+              >
+                {isStatsCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+              </button>
+              {!isStatsCollapsed && (
+                <FireStats
+                  data={{
+                    totalDetections: currentCount,
+                    radius: 0.05,
+                    riskLevel: currentCount > 100 ? 'Critical' : currentCount > 50 ? 'High' : currentCount > 20 ? 'Medium' : 'Low',
+                    criticalFires: filteredData.filter(f => f.properties.frp > 100 && f.properties.confidence >= 80).length,
+                    avgFRP: filteredData.reduce((sum, f) => sum + f.properties.frp, 0) / filteredData.length,
+                    maxFRP: Math.max(...filteredData.map(f => f.properties.frp)),
+                    avgConfidence: filteredData.reduce((sum, f) => sum + f.properties.confidence, 0) / filteredData.length,
+                    highConfidenceCount: filteredData.filter(f => f.properties.confidence >= 80).length,
+                  }}
+                />
+              )}
+              {isStatsCollapsed && (
+                <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-lg p-2 text-white text-xs font-bold flex items-center gap-2">
+                  <Flame className="h-3 w-3 text-orange-500" />
+                  Fire Stats
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Region Selector, Layer Selector and Control Buttons */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-start gap-2">
+        {/* Region Selector - First on mobile, first on desktop */}
+        <div className="region-selector-container w-auto md:w-64 order-1 md:order-1">
+          <div className="relative">
+            <button
+              onClick={handleRegionToggle}
+              className="absolute -top-2 -right-2 z-20 p-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white"
+            >
+              {isRegionCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            </button>
+            {!isRegionCollapsed && (
+              <RegionSelector
+                value={selectedRegion}
+                options={REGION_OPTIONS}
+                onChange={setSelectedRegion}
+              />
+            )}
+            {isRegionCollapsed && (
+              <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-lg p-2 text-white text-xs font-bold flex items-center gap-2">
+                <MapPin className="h-3 w-3 text-green-500" />
+                Region
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Layer Selector - Second on mobile, second on desktop */}
+        <div className="layer-selector-container w-auto md:w-64 order-2 md:order-2">
+          <LayerSelector
+            selectedLayerId={selectedLayerId}
+            onLayerChange={setSelectedLayerId}
+          />
+        </div>
+
+        {/* Control Buttons - Third on mobile, third on desktop */}
+        <div className="flex flex-row md:flex-col gap-2 order-3 md:order-3">
+          <IconButton
+            icon={<Filter />}
+            onClick={() => setShowFilters(!showFilters)}
+            variant="default"
+            title="Filters"
+            className="filter-button"
+          />
+          <IconButton
+            icon={<Map />}
+            onClick={() => setVisualizationMode(prev => prev === 'points' ? 'heatmap' : 'points')}
+            variant="default"
+            title={visualizationMode === 'points' ? 'Switch to Heatmap' : 'Switch to Points'}
+            className="visualization-toggle"
+          />
+          <IconButton
+            icon={<Layers />}
+            onClick={() => setShowAerosolLayer(!showAerosolLayer)}
+            variant={showAerosolLayer ? "default" : "outline"}
+            title={showAerosolLayer ? 'Hide Aerosol Layer' : 'Show Aerosol Layer'}
+            className="aerosol-toggle"
+          />
+          <IconButton
+            icon={<HelpCircle />}
+            onClick={() => setShowTour(true)}
+            variant="default"
+            title="Start Guided Tour"
+            className="tour-button"
+          />
+        </div>
+        </div>
+      </div>
+
+      {/* Cache Update Indicator */}
+      <div 
+        style={{ 
+          position: 'fixed',
+          bottom: '6rem',
+          left: '50vw',
+          transform: 'translateX(-50%)',
+          zIndex: 50
+        }}
+      >
+        <CacheIndicator isVisible={isFetching} />
+      </div>
 
 
       {/* Filters Panel */}
-      <div className="absolute top-16 right-4 z-20">
+      <div className="absolute top-32 right-20 z-[10002]">
         <FilterPanel
           isOpen={showFilters}
           onClose={() => setShowFilters(false)}
@@ -268,11 +588,22 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         />
       </div>
 
-      {/* Globe */}
-      <div className="w-full h-full">
+      {/* Globe with synchronized image and point animations */}
+      <div className="globe-container w-full h-full" style={{
+        transition: 'none' // No CSS transitions - instant image changes synchronized with point animations
+      }}>
         <Globe
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+          ref={globeRef}
+          globeImageUrl={gibsGlobeUrl}
           backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+          onZoom={(coords: any) => {
+            // Update zoom level for dynamic resolution
+            // coords.altitude ranges from ~1.5 (zoomed out) to ~0.1 (zoomed in)
+            // Convert to zoom level: 1 (far) to 4 (close)
+            const altitude = coords?.altitude || 1.5;
+            const zoomLevel = Math.max(1, Math.min(4, 1.5 / altitude));
+            setGlobeZoom(zoomLevel);
+          }}
           polygonsData={selectedRegionPolygon}
           polygonGeoJsonGeometry="geometry"
           polygonCapColor={(d: any) => d.properties?.color || 'rgba(34, 139, 34, 0.3)'}
@@ -295,22 +626,34 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
             </div>
           `}
           polygonsTransitionDuration={300}
-          pointsData={filteredData || []}
+          pointsData={visualizationMode === 'points' ? (filteredData || []) : []}
           pointsTransitionDuration={FIRE_GLOBE_CONFIG.animation.pointTransitionDuration}
           pointLat={(d) => (d as FireFeature).geometry.coordinates[1]}
           pointLng={(d) => (d as FireFeature).geometry.coordinates[0]}
           pointColor={(d) => {
             const feature = d as FireFeature;
             const fadeStage = (feature.properties as any)._fadeStage || 0;
+            
+            // Highlight specific point during tour by checking a special property
+            if ((feature.properties as any)._highlighted) {
+              return '#00FFFF'; // Cyan/bright blue for highlighted point
+            }
+            
             return getPointColor(
-              feature.properties.confidence,
               feature.properties.frp,
+              feature.properties.confidence,
               fadeStage
             );
           }}
           pointAltitude={(d) => {
             const feature = d as FireFeature;
             const fadeStage = (feature.properties as any)._fadeStage || 0;
+            
+            // Make highlighted point taller
+            if ((feature.properties as any)._highlighted) {
+              return 0.15; // Taller highlighted point
+            }
+            
             return getPointAltitude(feature.properties.frp, fadeStage);
           }}
           pointRadius={(d) => {
@@ -321,58 +664,110 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
           onPointClick={(point) => handlePointClick(point as FireFeature)}
           pointLabel={(d) => {
             const feature = d as FireFeature;
-            return `
-              <div style="
-                background: rgba(0, 0, 0, 0.9);
-                padding: 12px;
-                border-radius: 8px;
-                color: white;
-                font-family: sans-serif;
-                min-width: 200px;
-              ">
-                <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">
-                  🔥 Fire Detection
-                </div>
-                <div style="font-size: 14px; line-height: 1.6;">
-                  <b>FRP:</b> ${feature.properties.frp} MW<br/>
-                  <b>Confidence:</b> ${feature.properties.confidence}%<br/>
-                  <b>Brightness:</b> ${feature.properties.brightness}K<br/>
-                  <b>Date:</b> ${feature.properties.acq_date}<br/>
-                  <b>Time:</b> ${feature.properties.acq_time}<br/>
-                  <b>Satellite:</b> ${feature.properties.satellite}
-                </div>
-              </div>
-            `;
+            const confidence = feature.properties.confidence;
+            
+            return generatePointTooltip({
+              title: 'Fire Detection',
+              icon: '🔥',
+              primaryMetric: {
+                label: 'FRP',
+                value: `${feature.properties.frp} MW`,
+                color: '#fb923c', // orange-400
+              },
+              secondaryMetric: {
+                label: 'Confidence',
+                value: `${confidence}%`,
+                color: confidence >= 80 ? '#60a5fa' : '#fbbf24', // blue-400 : yellow-400
+              },
+              tertiaryMetric: {
+                label: 'Brightness',
+                value: `${feature.properties.brightness}K`,
+              },
+              metadata: [
+                {
+                  icon: '📅',
+                  label: 'Date',
+                  value: `${feature.properties.acq_date} ${feature.properties.acq_time}`,
+                },
+                {
+                  icon: '🛰️',
+                  label: 'Satellite',
+                  value: feature.properties.satellite,
+                },
+              ],
+            });
           }}
         />
       </div>
 
-      {/* Timeline Controls */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <TimelineControls
-          currentDate={currentDate}
-          currentIndex={currentDateIndex}
-          totalDates={uniqueDates.length}
-          currentCount={currentCount}
-          isPlaying={isPlaying}
-          playbackSpeed={playbackSpeed}
-          onPlayPause={() => setIsPlaying(!isPlaying)}
-          onSkipBack={() => {
-            setCurrentDateIndex((prev) => Math.max(0, prev - 1));
-            setIsPlaying(false);
-          }}
-          onSkipForward={() => {
-            setCurrentDateIndex((prev) => Math.min(uniqueDates.length - 1, prev + 1));
-            setIsPlaying(false);
-          }}
-          onTimelineChange={(index) => {
-            setCurrentDateIndex(index);
-            setIsPlaying(false);
-          }}
-          onSpeedChange={setPlaybackSpeed}
-          startDate={uniqueDates[0]}
-          endDate={uniqueDates[uniqueDates.length - 1]}
-        />
+      {/* Timeline Controls - Responsive */}
+      <div className="timeline-controls absolute bottom-4 left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end">
+        <div className="relative">
+          <button
+            onClick={handleTimelineToggle}
+            className="absolute -top-2 -right-2 z-20 p-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white"
+          >
+            {isTimelineCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+          </button>
+          {!isTimelineCollapsed && (
+            <TimelineControls
+              currentDate={currentDate}
+              currentIndex={currentDateIndex}
+              totalDates={uniqueDates.length}
+              currentCount={currentCount}
+              isPlaying={isPlaying}
+              playbackSpeed={playbackSpeed}
+              grouping={timeGrouping}
+              onPlayPause={() => setIsPlaying(!isPlaying)}
+              onSkipBack={() => {
+                const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+                setCurrentDateIndex((prev) => Math.max(0, prev - step));
+                setIsPlaying(false);
+              }}
+              onSkipForward={() => {
+                const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+                setCurrentDateIndex((prev) => Math.min(uniqueDates.length - 1, prev + step));
+                setIsPlaying(false);
+              }}
+              onTimelineChange={setCurrentDateIndex}
+              onSpeedChange={setPlaybackSpeed}
+              onGroupingChange={setTimeGrouping}
+              startDate={uniqueDates[0]}
+              endDate={uniqueDates[uniqueDates.length - 1]}
+            />
+          )}
+          {isTimelineCollapsed && (
+            <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-lg p-2 flex items-center gap-2">
+              <Clock className="h-3 w-3 text-blue-500" />
+              <button
+                onClick={() => {
+                  const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+                  setCurrentDateIndex((prev) => Math.max(0, prev - step));
+                  setIsPlaying(false);
+                }}
+                className="p-1 hover:bg-white/10 rounded transition-colors text-white"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="p-1 hover:bg-white/10 rounded transition-colors text-white"
+              >
+                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => {
+                  const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+                  setCurrentDateIndex((prev) => Math.min(uniqueDates.length - 1, prev + step));
+                  setIsPlaying(false);
+                }}
+                className="p-1 hover:bg-white/10 rounded transition-colors text-white"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Detail Modal */}
@@ -380,6 +775,17 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         data={selectedPoint}
+      />
+
+      {/* Guided Tour */}
+      <GuidedTour
+        steps={tourSteps}
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+        characterImage={satelliteImage}
+        onComplete={() => {
+          setShowTour(false);
+        }}
       />
     </div>
   );

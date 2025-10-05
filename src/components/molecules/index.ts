@@ -4,3 +4,6 @@
 
 export * from './InstrumentCard';
 export * from './RegionCard';
+export * from './HeroContent';
+export * from './MediaGrid';
+export * from './ActionButtonGroup';

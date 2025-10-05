@@ -5,7 +5,7 @@ import { FireGlobePage } from './pages/FireGlobePage';
 
 /**
  * App Component
- * Componente raiz da aplicação
+ * Componente raiz da aplicação com roteamento
  */
 
 function App() {

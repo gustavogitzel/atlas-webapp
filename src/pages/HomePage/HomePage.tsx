@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SplitText } from '@atoms/SplitText';
 import { ScrollButton } from '@atoms/ScrollButton';
+import { ServiceWorkerStatus } from '@atoms/ServiceWorkerStatus';
 import { useSnapScroll, useIntersectionObserver } from '@/hooks';
 
 import backgroundHome from '../../assets/images/background_home.jpg';
@@ -31,6 +32,9 @@ export const HomePage = () => {
 
   return (
     <div className="relative">
+      {/* Service Worker Cache Status */}
+      <ServiceWorkerStatus />
+      
       {/* Hero Section */}
       <div 
         id="hero-section"

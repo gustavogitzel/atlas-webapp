@@ -16,35 +16,35 @@ declare global {
 const tourSteps = [
   {
     id: 'welcome',
-    message: 'Welcome to the Terra Satellite Explorer! I\'m here to guide you through Terra\'s incredible instruments. Click NEXT to begin the tour!',
+    message: "Hello. I'm Terra. For 25 years, I've been watching over our home. I want to share some of my stories with you. Are you ready?",
   },
   {
     id: 'intro',
-    message: 'The Terra satellite, launched in 1999, carries five state-of-the-art instruments that monitor Earth\'s climate and environment. Let\'s explore each one!',
+    message: "To understand our world, I use five special senses. Let me introduce you to my team...",
   },
   {
     id: 'modis',
-    message: 'This is MODIS - the Moderate Resolution Imaging Spectroradiometer. It\'s Terra\'s primary instrument, capturing the entire Earth every 1-2 days in 36 spectral bands!',
+    message: "First, MODIS. My wide-view eyes for seeing the big picture.",
     instrumentId: 'MODIS',
   },
   {
     id: 'aster',
-    message: 'Here we have ASTER - a joint project between NASA and Japan. It creates detailed maps of land surface temperature and elevation, perfect for monitoring volcanoes and glaciers!',
+    message:  "This is ASTER, my 3D scanner. It maps the shape and temperature of the land." ,
     instrumentId: 'ASTER',
   },
   {
     id: 'misr',
-    message: 'Meet MISR! With its 9 cameras viewing Earth from different angles, it provides unique insights into atmospheric particles and cloud properties.',
+    message:  "MISR uses nine cameras to see through haze and understand the air we breathe." ,
     instrumentId: 'MISR',
   },
   {
     id: 'mopitt',
-    message: 'This is MOPITT - it tracks pollution! By measuring carbon monoxide and methane, it helps scientists understand air quality and pollution movement globally.',
+    message:  "Meet MOPITT, my 'super-sniffer.' It detects invisible pollution." ,
     instrumentId: 'MOPITT',
   },
   {
     id: 'ceres',
-    message: 'Finally, CERES measures Earth\'s energy balance by tracking reflected solar radiation and thermal emissions - crucial for climate studies!',
+    message:  "And CERES, my energy meter. It checks Earth's temperature, like a planetary thermometer.",
     instrumentId: 'CERES',
   },
   {
@@ -401,7 +401,7 @@ export const SatellitePage = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="absolute z-[10]"
+            className="absolute z-[10] flex items-center justify-center"
             style={{
               top: instrumentPositions[activeInstrument.id]?.y 
                 ? `${instrumentPositions[activeInstrument.id].y}%` 
@@ -410,11 +410,13 @@ export const SatellitePage = () => {
                 ? `${instrumentPositions[activeInstrument.id].x}%` 
                 : instruments.find(i => i.id === activeInstrument.id)?.position.left,
               transform: 'translate(-50%, -50%)',
+              width: '48px',
+              height: '48px',
             }}
           >
             {/* Anel pulsante grande */}
             <motion.div
-              className="absolute inset-0 rounded-full border-2"
+              className="absolute rounded-full border-2"
               animate={{
                 scale: [1, 2.5, 1],
                 opacity: [0.6, 0, 0.6],
@@ -425,18 +427,15 @@ export const SatellitePage = () => {
                 ease: "easeInOut",
               }}
               style={{
-                width: '48px',
-                height: '48px',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
+                width: '100%',
+                height: '100%',
                 backgroundColor: 'rgba(255, 255, 255, 0.4)',
                 borderColor: '#ffffff',
               }}
             />
             {/* Ponto central destacado */}
             <div 
-              className="relative w-6 h-6 rounded-full animate-pulse"
+              className="absolute w-6 h-6 rounded-full animate-pulse"
               style={{
                 backgroundColor: '#ffffff',
                 boxShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 0 0 4px rgba(255, 255, 255, 0.5)',
@@ -508,7 +507,7 @@ export const SatellitePage = () => {
             className="fixed bottom-8 right-4 z-[10001] flex flex-col gap-3 pointer-events-auto items-end"
           >
             {/* Info Badge */}
-            <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg px-4 py-2 text-center">
+            <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg px-5 py-2 text-center">
               <p className="text-blue-300 text-xs font-poppins">
                 🔒 Complete the tour to unlock the exploration features
               </p>
@@ -535,7 +534,7 @@ export const SatellitePage = () => {
                 onClick={handleNextStep}
                 className="flex-1 px-4 py-3 rounded-lg bg-blue-500 border border-blue-400 text-white hover:bg-blue-600 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 font-spartan font-bold shadow-lg shadow-blue-500/50"
               >
-                {currentTourStep === tourSteps.length - 1 ? 'FINISH' : 'NEXT'}
+                {currentTourStep === tourSteps.length - 1 ? 'CONTINUE' : 'NEXT'}
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>

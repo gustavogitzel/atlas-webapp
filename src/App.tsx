@@ -1,4 +1,7 @@
-import { AppRouter } from './routes';
+import { HomePage } from './pages/HomePage/HomePage';
+import { Route, Routes } from 'react-router-dom';
+import { SatellitePage } from './pages/SatelitePage/SatellitePage';
+import { FireGlobePage } from './pages/FireGlobePage';
 
 /**
  * App Component
@@ -6,7 +9,15 @@ import { AppRouter } from './routes';
  */
 
 function App() {
-  return <AppRouter />;
+  return (
+    <div>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/satellite" element={<SatellitePage />} />
+        <Route path="/fire-globe" element={<FireGlobePage />} />
+      </Routes>
+    </div>
+  );
 }
 
 export default App;

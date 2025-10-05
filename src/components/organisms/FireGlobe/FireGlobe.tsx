@@ -783,6 +783,10 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         isOpen={showTour}
         onClose={() => setShowTour(false)}
         characterImage={satelliteImage}
+        onStepChange={(stepIndex: number) => {
+          // Callback para notificação de mudança de step
+          console.log('Tour step changed to:', stepIndex);
+        }}
         onComplete={() => {
           setShowTour(false);
         }}

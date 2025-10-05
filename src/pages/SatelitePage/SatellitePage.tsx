@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { GuideCharacter } from '@molecules/GuideCharacter';
 import backgroundHome from "../../assets/images/background_home.jpg";
+import satelliteImage from '../../assets/images/satellite.png';
 
 // Declaração global para a API do Sketchfab
 declare global {
@@ -8,6 +11,47 @@ declare global {
     Sketchfab: any;
   }
 }
+
+// Tour steps for guided experience
+const tourSteps = [
+  {
+    id: 'welcome',
+    message: 'Welcome to the Terra Satellite Explorer! I\'m here to guide you through Terra\'s incredible instruments. Click NEXT to begin the tour!',
+  },
+  {
+    id: 'intro',
+    message: 'The Terra satellite, launched in 1999, carries five state-of-the-art instruments that monitor Earth\'s climate and environment. Let\'s explore each one!',
+  },
+  {
+    id: 'modis',
+    message: 'This is MODIS - the Moderate Resolution Imaging Spectroradiometer. It\'s Terra\'s primary instrument, capturing the entire Earth every 1-2 days in 36 spectral bands!',
+    instrumentId: 'MODIS',
+  },
+  {
+    id: 'aster',
+    message: 'Here we have ASTER - a joint project between NASA and Japan. It creates detailed maps of land surface temperature and elevation, perfect for monitoring volcanoes and glaciers!',
+    instrumentId: 'ASTER',
+  },
+  {
+    id: 'misr',
+    message: 'Meet MISR! With its 9 cameras viewing Earth from different angles, it provides unique insights into atmospheric particles and cloud properties.',
+    instrumentId: 'MISR',
+  },
+  {
+    id: 'mopitt',
+    message: 'This is MOPITT - it tracks pollution! By measuring carbon monoxide and methane, it helps scientists understand air quality and pollution movement globally.',
+    instrumentId: 'MOPITT',
+  },
+  {
+    id: 'ceres',
+    message: 'Finally, CERES measures Earth\'s energy balance by tracking reflected solar radiation and thermal emissions - crucial for climate studies!',
+    instrumentId: 'CERES',
+  },
+  {
+    id: 'conclusion',
+    message: 'Great job! You\'ve learned about all of Terra\'s instruments. Feel free to explore on your own by clicking the glowing points. Have fun discovering more!',
+  },
+];
 
 // Data for Terra's five main instruments
 const instruments = [
@@ -48,10 +92,49 @@ export const SatellitePage = () => {
   const [instrumentPositions, setInstrumentPositions] = useState<Record<string, { x: number; y: number }>>({});
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const apiRef = useRef<any>(null);
+  
+  // Tour state
+  const [currentTourStep, setCurrentTourStep] = useState(0);
+  const [showTour, setShowTour] = useState(true);
+  const [isTourActive, setIsTourActive] = useState(true);
+  
+  // Debug mode for coordinate adjustment
+  const [debugMode, setDebugMode] = useState(false);
+  const [clickedCoordinates, setClickedCoordinates] = useState<[number, number, number] | null>(null);
 
-  const handleInstrumentClick = (instrument: typeof instruments[0]) => {
-    setActiveInstrument(activeInstrument?.id === instrument.id ? null : instrument);
+  // Handle tour navigation
+  const handleNextStep = () => {
+    if (currentTourStep < tourSteps.length - 1) {
+      setCurrentTourStep(prev => prev + 1);
+    } else {
+      // Tour completed
+      setIsTourActive(false);
+      setShowTour(false);
+    }
   };
+
+  const handlePrevStep = () => {
+    if (currentTourStep > 0) {
+      setCurrentTourStep(prev => prev - 1);
+    }
+  };
+
+  // Auto-highlight instrument during tour
+  useEffect(() => {
+    if (!isTourActive) return;
+    
+    const currentStep = tourSteps[currentTourStep];
+    if (currentStep.instrumentId) {
+      const instrument = instruments.find(i => i.id === currentStep.instrumentId);
+      if (instrument) {
+        setActiveInstrument(instrument);
+        // Focar a câmera no instrumento
+        focusOnInstrument(currentStep.instrumentId);
+      }
+    } else {
+      setActiveInstrument(null);
+    }
+  }, [currentTourStep, isTourActive]);
 
   // Carregar o script da API do Sketchfab
   useEffect(() => {
@@ -82,7 +165,32 @@ export const SatellitePage = () => {
         // Aguardar o modelo carregar
         api.addEventListener('viewerready', () => {
           console.log('Sketchfab viewer ready');
+          
+          // Configurar câmera inicial - visualização de baixo do satélite
+          // Posicionar câmera abaixo e ligeiramente afastada
+          api.setCameraLookAt(
+            [0, -3, 2],  // Posição da câmera (abaixo e atrás)
+            [0, 0, 0],   // Olhando para o centro do satélite
+            0            // Sem animação inicial
+          );
+          
           startTrackingInstruments(api);
+          
+          // Debug mode: capturar cliques no modelo 3D
+          if (debugMode) {
+            api.addEventListener('click', (event: any) => {
+              if (event.position3D && event.position3D.length === 3) {
+                const coords: [number, number, number] = [
+                  parseFloat(event.position3D[0].toFixed(2)),
+                  parseFloat(event.position3D[1].toFixed(2)),
+                  parseFloat(event.position3D[2].toFixed(2))
+                ];
+                setClickedCoordinates(coords);
+                console.log('🎯 Clicked 3D Coordinates:', coords);
+                console.log('Copy this to instrument3DPositions:', `'INSTRUMENT': [${coords[0]}, ${coords[1]}, ${coords[2]}],`);
+              }
+            });
+          }
         });
       },
       error: () => {
@@ -108,17 +216,18 @@ export const SatellitePage = () => {
   };
 
   const startTrackingInstruments = (api: any) => {
+    // Posições 3D aproximadas dos instrumentos baseadas na imagem NASA Terra
+    // Coordenadas ajustadas para visualização de baixo do satélite
+    const instrument3DPositions: Record<string, [number, number, number]> = {
+      'MODIS': [0, 0.8, 0],         // Topo central - instrumento principal
+      'ASTER': [0.6, 0, 0.3],       // Lateral direita
+      'MISR': [0, -0.3, 0.6],       // Centro inferior frontal
+      'MOPITT': [-0.6, -0.3, 0.3],  // Lateral esquerda inferior
+      'CERES': [-0.6, -0.5, 0],     // Canto inferior esquerdo
+    };
+
     // Função para converter coordenadas 3D em 2D
     const updatePositions = () => {
-      // Posições 3D aproximadas dos instrumentos (você precisará ajustar estes valores)
-      const instrument3DPositions: Record<string, [number, number, number]> = {
-        'MODIS': [0, 2, 0],      // Ajustar baseado no modelo real
-        'ASTER': [1, 0, 1],      // Ajustar baseado no modelo real
-        'MISR': [0, -1, 1],      // Ajustar baseado no modelo real
-        'MOPITT': [-1, 0, 1],    // Ajustar baseado no modelo real
-        'CERES': [1, 1, 0],      // Ajustar baseado no modelo real
-      };
-
       const newPositions: Record<string, { x: number; y: number }> = {};
 
       Object.entries(instrument3DPositions).forEach(([id, pos3D]) => {
@@ -143,6 +252,35 @@ export const SatellitePage = () => {
     return () => clearInterval(interval);
   };
 
+  // Função para focar a câmera em um instrumento específico
+  const focusOnInstrument = (instrumentId: string) => {
+    if (!apiRef.current) return;
+
+    const instrument3DPositions: Record<string, [number, number, number]> = {
+      'MODIS': [0, 1.5, -0.5],
+      'ASTER': [0.8, -0.3, 0],
+      'MISR': [0, -0.5, 0.5],
+      'MOPITT': [-0.8, -0.5, 0],
+      'CERES': [-0.8, -0.8, -0.3],
+    };
+
+    const position = instrument3DPositions[instrumentId];
+    if (position) {
+      // Calcular posição da câmera (visualização de baixo do satélite)
+      // Câmera posicionada abaixo olhando para cima
+      const cameraPosition = [position[0] * 1.5, position[1] - 2, position[2] + 2];
+      
+      apiRef.current.setCameraLookAt(
+        cameraPosition,
+        position,
+        2, // duração da animação em segundos
+        (err: any) => {
+          if (err) console.error('Error setting camera:', err);
+        }
+      );
+    }
+  };
+
   return (
     <div 
       className="relative w-screen h-screen overflow-hidden"
@@ -163,95 +301,262 @@ export const SatellitePage = () => {
           id="api-frame"
         />
 
-        {/* Interactive hotspots overlaying the iframe */}
-        <div className="absolute inset-0 pointer-events-none">
-          {instruments.map((instrument) => {
-            // Usar posições dinâmicas da API se disponíveis, caso contrário usar posições estáticas
-            const dynamicPosition = instrumentPositions[instrument.id];
-            const positionStyle = dynamicPosition
-              ? { top: `${dynamicPosition.y}%`, left: `${dynamicPosition.x}%` }
-              : { top: instrument.position.top, left: instrument.position.left };
+        {/* Overlay bloqueador durante o tour */}
+        {isTourActive && (
+          <div className="absolute inset-0 bg-transparent cursor-not-allowed z-[5]" />
+        )}
 
-            return (
-              <motion.button
-                key={instrument.id}
-                className="absolute pointer-events-auto"
-                style={{
-                  ...positionStyle,
-                  transform: 'translate(-50%, -50%)',
-                }}
-                onClick={() => handleInstrumentClick(instrument)}
-                whileHover={{ scale: 1.3 }}
-                whileTap={{ scale: 0.9 }}
-              >
-              {/* Outer pulse ring */}
-              <motion.div
-                className="absolute inset-0 rounded-full bg-white opacity-30"
-                animate={{
-                  scale: [1, 2, 1],
-                  opacity: [0.3, 0, 0.3],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                }}
-              />
-              
-              {/* Main dot */}
-              <div
-                className={`relative w-4 h-4 rounded-full transition-all duration-300 shadow-lg ${
-                  activeInstrument?.id === instrument.id
-                    ? 'bg-blue-500 ring-4 ring-blue-400/50'
-                    : 'bg-white hover:bg-blue-300'
-                }`}
-                style={{
-                  boxShadow: '0 0 20px rgba(255, 255, 255, 0.6)',
-                }}
-              />
-            </motion.button>
-            );
-          })}
-        </div>
+        {/* Ponto destacado especial durante o tour */}
+        {isTourActive && activeInstrument && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            className="absolute z-[10]"
+            style={{
+              top: instrumentPositions[activeInstrument.id]?.y 
+                ? `${instrumentPositions[activeInstrument.id].y}%` 
+                : instruments.find(i => i.id === activeInstrument.id)?.position.top,
+              left: instrumentPositions[activeInstrument.id]?.x 
+                ? `${instrumentPositions[activeInstrument.id].x}%` 
+                : instruments.find(i => i.id === activeInstrument.id)?.position.left,
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            {/* Anel pulsante grande */}
+            <motion.div
+              className="absolute inset-0 rounded-full bg-yellow-400/40 border-2 border-yellow-400"
+              animate={{
+                scale: [1, 2.5, 1],
+                opacity: [0.6, 0, 0.6],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              style={{
+                width: '48px',
+                height: '48px',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+            />
+            {/* Ponto central destacado */}
+            <div className="relative w-6 h-6 rounded-full bg-yellow-400 shadow-2xl ring-4 ring-yellow-400/50 animate-pulse" />
+          </motion.div>
+        )}
 
-        {/* Modal for instrument details */}
+
+
+        {/* Modal for instrument details - Canto superior direito */}
         <AnimatePresence>
           {activeInstrument && (
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              initial={{ opacity: 0, x: 100, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 100, scale: 0.9 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 max-w-2xl w-[90%] pointer-events-auto"
+              className="absolute top-20 right-4 max-w-md w-[90%] md:w-auto pointer-events-auto z-[100]"
             >
-              <div className="bg-black/80 backdrop-blur-lg rounded-xl p-6 border border-white/20 shadow-2xl">
+              <div className="bg-black/90 backdrop-blur-lg rounded-xl p-5 border border-white/20 shadow-2xl">
                 <div className="flex justify-between items-start mb-3">
-                  <h2 className="text-xl font-bold text-white font-spartan">
+                  <h2 className="text-lg font-bold text-white font-spartan pr-4">
                     {activeInstrument.name}
                   </h2>
-                  <button
-                    onClick={() => setActiveInstrument(null)}
-                    className="text-white/60 hover:text-white transition-colors p-1"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  {!isTourActive && (
+                    <button
+                      onClick={() => setActiveInstrument(null)}
+                      className="text-white/60 hover:text-white transition-colors p-1 flex-shrink-0"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
-                <p className="text-white/80 font-poppins leading-relaxed">
+                <p className="text-white/80 font-poppins leading-relaxed text-sm">
                   {activeInstrument.description}
                 </p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Guide Character with Tour */}
+        {showTour && (
+          <motion.div
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
+          >
+            <GuideCharacter
+              imageUrl={satelliteImage}
+              message={tourSteps[currentTourStep].message}
+              isActive={isTourActive}
+              showMessage
+              avatarSize="lg"
+            />
+          </motion.div>
+        )}
+
+        {/* Tour Navigation Buttons */}
+        {showTour && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-8 right-8 z-[10001] flex flex-col gap-3 pointer-events-auto"
+          >
+            {/* Info Badge */}
+            <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 rounded-lg px-4 py-2 text-center">
+              <p className="text-blue-300 text-xs font-poppins">
+                🔒 Complete the tour to unlock the exploration features
+              </p>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex gap-3">
+              {/* Previous Button */}
+              <button
+                onClick={handlePrevStep}
+                disabled={currentTourStep === 0}
+                className={`px-4 py-3 rounded-lg backdrop-blur-sm border transition-all duration-300 flex items-center gap-2 font-spartan font-bold ${
+                  currentTourStep === 0
+                    ? 'bg-gray-800/50 border-gray-700 text-gray-600 cursor-not-allowed'
+                    : 'bg-black/80 border-white/20 text-white hover:bg-white/10 hover:scale-105'
+                }`}
+              >
+                <ChevronLeft className="w-5 h-5" />
+                PREVIOUS
+              </button>
+
+              {/* Next Button */}
+              <button
+                onClick={handleNextStep}
+                className="px-4 py-3 rounded-lg bg-blue-500 border border-blue-400 text-white hover:bg-blue-600 hover:scale-105 transition-all duration-300 flex items-center gap-2 font-spartan font-bold shadow-lg shadow-blue-500/50"
+              >
+                {currentTourStep === tourSteps.length - 1 ? 'FINISH' : 'NEXT'}
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step Indicator */}
+        {showTour && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-4 py-2"
+          >
+            {tourSteps.map((_, index) => (
+              <div
+                key={index}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  index === currentTourStep
+                    ? 'w-8 bg-blue-500'
+                    : index < currentTourStep
+                    ? 'w-2 bg-blue-500/50'
+                    : 'w-2 bg-gray-600'
+                }`}
+              />
+            ))}
+            <span className="text-xs text-white ml-2 font-poppins">
+              {currentTourStep + 1}/{tourSteps.length}
+            </span>
+          </motion.div>
+        )}
+
+        {/* Debug Mode Controls */}
+        <div className="fixed top-4 left-4 z-[10001] flex flex-col gap-2">
+          <button
+            onClick={() => setDebugMode(!debugMode)}
+            className={`px-4 py-2 rounded-lg backdrop-blur-sm border transition-all duration-300 font-spartan text-sm ${
+              debugMode
+                ? 'bg-green-500/80 border-green-400 text-white'
+                : 'bg-black/80 border-white/20 text-white/60 hover:text-white'
+            }`}
+          >
+            {debugMode ? '🔍 Debug ON' : '🔍 Debug OFF'}
+          </button>
+          
+          {clickedCoordinates && debugMode && (
+            <div className="bg-black/90 backdrop-blur-sm border border-green-400 rounded-lg p-3 max-w-xs">
+              <p className="text-green-400 font-mono text-xs mb-1">📍 Clicked Position:</p>
+              <p className="text-white font-mono text-xs mb-2">
+                [{clickedCoordinates[0]}, {clickedCoordinates[1]}, {clickedCoordinates[2]}]
+              </p>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `'INSTRUMENT': [${clickedCoordinates[0]}, ${clickedCoordinates[1]}, ${clickedCoordinates[2]}],`
+                  );
+                }}
+                className="w-full px-2 py-1 bg-green-500 hover:bg-green-600 rounded text-white text-xs font-spartan"
+              >
+                📋 Copy Code
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Final message and BEGIN ADVENTURE button */}
+        {!showTour && (
+          <>
+            {/* Guide Character with final message */}
+            <motion.div
+              initial={{ opacity: 0, x: -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
+            >
+              <GuideCharacter
+                imageUrl={satelliteImage}
+                message="Congratulations! You've completed the satellite tour. Now let's explore the real data Terra has collected over the years. Ready to begin your adventure?"
+                isActive={true}
+                showMessage
+                avatarSize="lg"
+              />
+            </motion.div>
+
+            {/* BEGIN ADVENTURE Button */}
+            <motion.div
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8 }}
+              className="fixed right-8 bottom-8 z-[10001] pointer-events-auto"
+            >
+              <button
+                onClick={() => window.location.href = '/fire-globe'}
+                className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl border-2 border-white/20 transition-all duration-300 hover:scale-105 shadow-2xl hover:shadow-blue-500/50"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-white font-spartan font-bold text-lg tracking-wider">
+                    BEGIN ADVENTURE
+                  </span>
+                  <svg 
+                    className="w-6 h-6 text-white transition-transform duration-300 group-hover:translate-x-2" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M13 7l5 5m0 0l-5 5m5-5H6" 
+                    />
+                  </svg>
+                </div>
+                {/* Glow effect */}
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300" />
+              </button>
+            </motion.div>
+          </>
+        )}
       </div>
     </div>
   );

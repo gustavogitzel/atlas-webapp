@@ -31,6 +31,7 @@ export interface GuidedTourProps {
   onClose: () => void;
   characterImage: string;
   onComplete?: () => void;
+  onStepChange?: (stepIndex: number) => void;
 }
 
 export const GuidedTour = ({
@@ -39,6 +40,7 @@ export const GuidedTour = ({
   onClose,
   characterImage,
   onComplete,
+  onStepChange,
 }: GuidedTourProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [interactionCompleted, setInteractionCompleted] = useState(false);
@@ -48,6 +50,11 @@ export const GuidedTour = ({
   const isFirstStep = currentStep === 0;
   
   const showOverlay = step.showOverlay !== false;
+  
+  // Aplicar opacidade e cores nas duas primeiras etapas
+  const isIntroStep = currentStep <= 1;
+  const avatarOpacity = isIntroStep ? 0.95 : 1;
+  const avatarFilter = isIntroStep ? 'saturate(1.2) brightness(1.1)' : 'none';
 
   // Execute action when step changes
   useEffect(() => {
@@ -56,7 +63,10 @@ export const GuidedTour = ({
     if (step.action) {
       step.action();
     }
-  }, [isOpen, step, currentStep]);
+    
+    // Notificar mudança de step
+    onStepChange?.(currentStep);
+  }, [isOpen, step, currentStep, onStepChange]);
 
   useEffect(() => {
     if (!step.requiresInteraction || !step.interactionTarget) return;
@@ -144,6 +154,11 @@ export const GuidedTour = ({
             className={`fixed left-8 z-[10001] pointer-events-none bottom-8 ${
               step.position === 'top' ? 'md:bottom-8 top-8' : 'md:bottom-8'
             }`}
+            style={{
+              opacity: avatarOpacity,
+              filter: avatarFilter,
+              transition: 'opacity 0.3s ease, filter 0.3s ease'
+            }}
           >
             <GuideCharacter
               imageUrl={characterImage}

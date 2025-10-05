@@ -7,7 +7,7 @@ import { IconButton } from '@atoms/IconButton';
  * Controls for timeline playback with animations
  */
 
-export type TimeGrouping = 'daily' | '5-days' | 'weekly' | 'monthly';
+export type TimeGrouping = 'daily' | '5-days' | 'weekly' | 'monthly' | 'yearly';
 
 export interface TimelineControlsProps {
   currentDate: string;
@@ -69,7 +69,7 @@ export const TimelineControls = ({
           {currentDate}
         </motion.div>
         <div className="text-xs text-gray-400 mt-1">
-          {currentCount} fires • {grouping === 'daily' ? 'Day' : grouping === '5-days' ? '5-Day Period' : grouping === 'weekly' ? 'Week' : 'Month'} {currentIndex + 1} of {totalDates}
+          {currentCount} fires • {grouping === 'daily' ? 'Day' : grouping === '5-days' ? '5-Day Period' : grouping === 'weekly' ? 'Week' : grouping === 'monthly' ? 'Month' : 'Year'} {currentIndex + 1} of {totalDates}
         </div>
       </div>
 
@@ -118,8 +118,8 @@ export const TimelineControls = ({
 
         {/* Progress Bar Fill */}
         <div
-          className="absolute top-0 h-2 bg-orange-500 rounded-full transition-all duration-300"
-          style={{ width: `${progressPercentage}%` }}
+          className="absolute top-0 h-2 rounded-full transition-all duration-300"
+          style={{ width: `${progressPercentage}%`, backgroundColor: '#5833A6' }}
         />
 
         {/* Slider Input */}
@@ -158,7 +158,8 @@ export const TimelineControls = ({
           step="100"
           value={playbackSpeed}
           onChange={(e) => onSpeedChange(parseInt(e.target.value))}
-          className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500"
+          className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+          style={{ accentColor: '#5833A6' }}
         />
         </div>
       )}
@@ -172,14 +173,15 @@ export const TimelineControls = ({
               {grouping === '5-days' ? '5 Days' : grouping}
             </span>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             <button
               onClick={() => onGroupingChange('daily')}
               className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
                 grouping === 'daily'
-                  ? 'bg-orange-500 text-white'
+                  ? 'text-white'
                   : 'bg-white/10 text-gray-400 hover:bg-white/20'
               }`}
+              style={grouping === 'daily' ? { backgroundColor: '#5833A6' } : {}}
             >
               Daily
             </button>
@@ -187,9 +189,10 @@ export const TimelineControls = ({
               onClick={() => onGroupingChange('5-days')}
               className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
                 grouping === '5-days'
-                  ? 'bg-orange-500 text-white'
+                  ? 'text-white'
                   : 'bg-white/10 text-gray-400 hover:bg-white/20'
               }`}
+              style={grouping === '5-days' ? { backgroundColor: '#5833A6' } : {}}
             >
               5 Days
             </button>
@@ -197,9 +200,10 @@ export const TimelineControls = ({
               onClick={() => onGroupingChange('weekly')}
               className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
                 grouping === 'weekly'
-                  ? 'bg-orange-500 text-white'
+                  ? 'text-white'
                   : 'bg-white/10 text-gray-400 hover:bg-white/20'
               }`}
+              style={grouping === 'weekly' ? { backgroundColor: '#5833A6' } : {}}
             >
               Weekly
             </button>
@@ -207,11 +211,23 @@ export const TimelineControls = ({
               onClick={() => onGroupingChange('monthly')}
               className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
                 grouping === 'monthly'
-                  ? 'bg-orange-500 text-white'
+                  ? 'text-white'
                   : 'bg-white/10 text-gray-400 hover:bg-white/20'
               }`}
+              style={grouping === 'monthly' ? { backgroundColor: '#5833A6' } : {}}
             >
               Monthly
+            </button>
+            <button
+              onClick={() => onGroupingChange('yearly')}
+              className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                grouping === 'yearly'
+                  ? 'text-white'
+                  : 'bg-white/10 text-gray-400 hover:bg-white/20'
+              }`}
+              style={grouping === 'yearly' ? { backgroundColor: '#5833A6' } : {}}
+            >
+              Yearly
             </button>
           </div>
         </div>

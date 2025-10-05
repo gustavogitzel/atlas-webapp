@@ -176,7 +176,7 @@ export const GuidedTour = ({
               initial={{ opacity: 0, x: 100 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 100 }}
-              className="fixed bottom-8 right-8 z-[10001] pointer-events-auto"
+              className="fixed bottom-8 right-8 z-[99999] pointer-events-auto"
             >
               <div className="flex flex-row gap-3">
             {/* Previous button */}
@@ -226,20 +226,21 @@ export const GuidedTour = ({
             )}
               </div>
             </motion.div>
-          )}
+            )
+          }
 
-          {/* Step indicator and close button - Left center (vertical) */}
-          <div className="fixed left-4 top-1/2 -translate-y-1/2 z-[10001] flex flex-col items-center gap-3">
-          {/* Close button */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            onClick={handleSkip}
-            className="p-2 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white pointer-events-auto"
-          >
-            <X className="h-4 w-4" />
-          </motion.button>
+          {/* Close button and Step indicator - Left side */}
+          <div className="fixed left-4 top-1/2 -translate-y-1/2 z-[99999] flex flex-col items-center gap-3">
+            {/* Close button */}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={handleSkip}
+              className="p-2 rounded-full bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-colors text-white pointer-events-auto"
+            >
+              <X className="h-4 w-4" />
+            </motion.button>
 
           {/* Step indicator */}
           <motion.div

@@ -117,7 +117,7 @@ export const createFloodGlobeTour = (
       },
     },
 
-    // Step 5: Flood Detection - Turn on Flood 2-Day
+    // Step 5: Flood Detection - Turn on Flood 2-Day with zoom
     {
       id: 'flood-detection',
       title: '🛰️ Terra Satellite',
@@ -126,6 +126,15 @@ export const createFloodGlobeTour = (
       showSpotlight: false,
       action: () => {
         setSelectedLayers(['flood-2day']);
+        
+        // Super zoom on Rio Grande do Sul to see flood details
+        if (globeRef.current) {
+          globeRef.current.pointOfView({
+            lat: -29.6898,
+            lng: -53.1485,
+            altitude: 0.3, // Super close zoom to see flood details
+          }, 2000);
+        }
       },
     },
 

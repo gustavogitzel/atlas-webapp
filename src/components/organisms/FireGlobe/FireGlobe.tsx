@@ -50,7 +50,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   const [uniqueDates, setUniqueDates] = useState<string[]>([]);
   // Match playback speed with point transition duration for synchronized animation
   const [playbackSpeed, setPlaybackSpeed] = useState(FIRE_GLOBE_CONFIG.animation.pointTransitionDuration);
-  const [timeGrouping, setTimeGrouping] = useState<'daily' | '5-days' | 'weekly' | 'monthly'>('5-days');
+  const [timeGrouping, setTimeGrouping] = useState<'daily' | '5-days' | 'weekly' | 'monthly' | 'yearly'>('5-days');
   const [filteredData, setFilteredData] = useState<FireFeature[]>([]);
 
   // Filter state
@@ -432,7 +432,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
   // Playback control with GIF-like looping
   useEffect(() => {
     if (isPlaying) {
-      const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+      const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : timeGrouping === 'monthly' ? 30 : 365;
       
       playIntervalRef.current = setInterval(() => {
         setCurrentDateIndex((prev) => {
@@ -478,7 +478,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     }
     
     // Count fires across the grouped period
-    const step = timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+    const step = timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : timeGrouping === 'monthly' ? 30 : 365;
     const endIndex = Math.min(currentDateIndex + step - 1, uniqueDates.length - 1);
     const dateRange = uniqueDates.slice(currentDateIndex, endIndex + 1);
     
@@ -835,7 +835,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
       </div>
 
       {/* Timeline Controls - Responsive */}
-      <div className="timeline-controls absolute bottom-24 left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end">
+      <div className={`timeline-controls absolute left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end ${showTour ? 'bottom-32' : 'bottom-4'}`}>
         <div className="relative">
           <button
             onClick={handleTimelineToggle}
@@ -855,20 +855,20 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
               isTourActive={showTour}
               onPlayPause={() => setIsPlaying(!isPlaying)}
               onSkipBack={() => {
-                const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+                const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : timeGrouping === 'monthly' ? 30 : 365;
                 setCurrentDateIndex((prev) => Math.max(0, prev - step));
                 setIsPlaying(false);
               }}
               onSkipForward={() => {
-                const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+                const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : timeGrouping === 'monthly' ? 30 : 365;
                 setCurrentDateIndex((prev) => Math.min(uniqueDates.length - 1, prev + step));
                 setIsPlaying(false);
               }}
               onTimelineChange={setCurrentDateIndex}
               onSpeedChange={setPlaybackSpeed}
               onGroupingChange={setTimeGrouping}
-              startDate={uniqueDates[0]}
-              endDate={uniqueDates[uniqueDates.length - 1]}
+              startDate={uniqueDates[0] || '2004-07-22'}
+              endDate={uniqueDates[uniqueDates.length - 1] || '2004-12-04'}
             />
           )}
           {isTimelineCollapsed && (
@@ -876,7 +876,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
               <Clock className="h-3 w-3 text-blue-500" />
               <button
                 onClick={() => {
-                  const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+                  const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : timeGrouping === 'monthly' ? 30 : 365;
                   setCurrentDateIndex((prev) => Math.max(0, prev - step));
                   setIsPlaying(false);
                 }}
@@ -892,7 +892,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
               </button>
               <button
                 onClick={() => {
-                  const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : 30;
+                  const step = timeGrouping === 'daily' ? 1 : timeGrouping === '5-days' ? 5 : timeGrouping === 'weekly' ? 7 : timeGrouping === 'monthly' ? 30 : 365;
                   setCurrentDateIndex((prev) => Math.min(uniqueDates.length - 1, prev + step));
                   setIsPlaying(false);
                 }}

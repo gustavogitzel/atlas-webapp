@@ -3,6 +3,8 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import { SatellitePage } from './pages/SatelitePage/SatellitePage';
 import { FireGlobePage } from './pages/FireGlobePage';
 import { FloodGlobePage } from './pages/FloodGlobePage';
+import {InteractiveGlobePage} from "@pages/InteractiveGlobePage";
+import {CreditsPage} from "@pages/CreditsPage";
 
 /**
  * App Component
@@ -17,6 +19,8 @@ function App() {
         <Route path="/satellite" element={<SatellitePage />} />
         <Route path="/fire-globe" element={<FireGlobePage />} />
         <Route path="/flood-globe" element={<FloodGlobePage />} />
+        <Route path="/interactive-globe" element={<InteractiveGlobePage />} />
+        <Route path="/credits" element={<CreditsPage />} />
         {/* Fallback - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

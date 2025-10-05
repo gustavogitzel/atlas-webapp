@@ -11,6 +11,7 @@ import { createFloodGlobeTour } from '@/data/floodGlobeTour';
 import satelliteImage from '@/assets/images/satellite.png';
 import beforeFloodImage from '@/assets/images/2023-esquerda.jpg';
 import afterFloodImage from '@/assets/images/2024-direita.jpg';
+import flood2dayImage from '@/assets/images/flood2day.jpg';
 
 /**
  * FloodGlobePage - Visualização de enchentes no Brasil
@@ -389,9 +390,8 @@ export const FloodGlobePage = () => {
               layerName = 'MODIS_Terra_Cloud_Water_Path';
               layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
             } else if (layerId === 'flood-2day') {
-              // WMS URL for Flood 2-Day (only on 15-MAY-2024)
-              layerName = 'MODIS_Combined_Flood_2-Day';
-              layerUrl = getLayerUrl(layerName, globeZoom, true, 'image/png', currentDate);
+              // Use local high-resolution flood image
+              layerUrl = flood2dayImage;
             } else {
               continue;
             }
@@ -572,8 +572,8 @@ export const FloodGlobePage = () => {
         </div>
       )}
 
-      {/* Layer Controls */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+      {/* Layer Controls - Horizontal Layout */}
+      <div className="absolute top-4 right-20 z-10 flex gap-2">
         {/* Base Layer Selection - Collapsible */}
         <div className="w-auto md:w-64">
           <div className="relative">
@@ -693,22 +693,22 @@ export const FloodGlobePage = () => {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Control Buttons */}
-        <div className="flex gap-2">
-          <IconButton
-            icon={<Info />}
-            onClick={() => setShowInfo(!showInfo)}
-            variant={showInfo ? "default" : "outline"}
-            title="Flood Information"
-          />
-          <IconButton
-            icon={<HelpCircle />}
-            onClick={() => setShowTour(true)}
-            variant="default"
-            title="Start Guided Tour"
-          />
-        </div>
+      {/* Control Buttons - Vertical Column on Right */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <IconButton
+          icon={<Info />}
+          onClick={() => setShowInfo(!showInfo)}
+          variant={showInfo ? "default" : "outline"}
+          title="Flood Information"
+        />
+        <IconButton
+          icon={<HelpCircle />}
+          onClick={() => setShowTour(true)}
+          variant="default"
+          title="Start Guided Tour"
+        />
       </div>
 
       {/* Globe */}
@@ -739,7 +739,7 @@ export const FloodGlobePage = () => {
       />
 
       {/* Timeline Controls */}
-      <div className="absolute bottom-24 left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end">
+      <div className={`absolute left-4 right-4 md:left-auto md:right-4 z-10 flex justify-center md:justify-end ${showTour ? 'bottom-32' : 'bottom-4'}`}>
         <TimelineControls
           currentDate={currentDate}
           currentIndex={currentDateIndex}

@@ -1,6 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import backgroundHome from "../../assets/images/background_home.jpg";
+
+// Declaração global para a API do Sketchfab
+declare global {
+  interface Window {
+    Sketchfab: any;
+  }
+}
 
 // Data for Terra's five main instruments
 const instruments = [
@@ -36,11 +43,104 @@ const instruments = [
   },
 ];
 
-export const SatelitePage = () => {
+export const SatellitePage = () => {
   const [activeInstrument, setActiveInstrument] = useState<typeof instruments[0] | null>(null);
+  const [instrumentPositions, setInstrumentPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const apiRef = useRef<any>(null);
 
   const handleInstrumentClick = (instrument: typeof instruments[0]) => {
     setActiveInstrument(activeInstrument?.id === instrument.id ? null : instrument);
+  };
+
+  // Carregar o script da API do Sketchfab
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      initializeSketchfab();
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const initializeSketchfab = () => {
+    if (!iframeRef.current || !window.Sketchfab) return;
+
+    const client = new window.Sketchfab('1.12.1', iframeRef.current);
+
+    client.init('0d9ed6443b0f41c2b08671ac12019859', {
+      success: (api: any) => {
+        apiRef.current = api;
+        api.start();
+        
+        // Aguardar o modelo carregar
+        api.addEventListener('viewerready', () => {
+          console.log('Sketchfab viewer ready');
+          startTrackingInstruments(api);
+        });
+      },
+      error: () => {
+        console.error('Sketchfab API error');
+      },
+      autostart: 1,
+      camera: 0,
+      transparent: 1,
+      ui_animations: 0,
+      ui_infos: 0,
+      ui_stop: 0,
+      ui_inspector: 0,
+      ui_watermark_link: 0,
+      ui_watermark: 0,
+      ui_ar: 0,
+      ui_help: 0,
+      ui_settings: 0,
+      ui_vr: 0,
+      ui_fullscreen: 0,
+      ui_annotations: 0,
+      ui_theme: 'dark',
+    });
+  };
+
+  const startTrackingInstruments = (api: any) => {
+    // Função para converter coordenadas 3D em 2D
+    const updatePositions = () => {
+      // Posições 3D aproximadas dos instrumentos (você precisará ajustar estes valores)
+      const instrument3DPositions: Record<string, [number, number, number]> = {
+        'MODIS': [0, 2, 0],      // Ajustar baseado no modelo real
+        'ASTER': [1, 0, 1],      // Ajustar baseado no modelo real
+        'MISR': [0, -1, 1],      // Ajustar baseado no modelo real
+        'MOPITT': [-1, 0, 1],    // Ajustar baseado no modelo real
+        'CERES': [1, 1, 0],      // Ajustar baseado no modelo real
+      };
+
+      const newPositions: Record<string, { x: number; y: number }> = {};
+
+      Object.entries(instrument3DPositions).forEach(([id, pos3D]) => {
+        // Converter coordenadas 3D para 2D na tela
+        api.getWorldToScreenCoordinates(pos3D, (err: any, pos2D: any) => {
+          if (!err && pos2D && iframeRef.current) {
+            const rect = iframeRef.current.getBoundingClientRect();
+            newPositions[id] = {
+              x: (pos2D[0] / rect.width) * 100,  // Percentual
+              y: (pos2D[1] / rect.height) * 100, // Percentual
+            };
+          }
+        });
+      });
+
+      setInstrumentPositions(newPositions);
+    };
+
+    // Atualizar posições constantemente
+    const interval = setInterval(updatePositions, 100);
+    
+    return () => clearInterval(interval);
   };
 
   return (
@@ -55,28 +155,35 @@ export const SatelitePage = () => {
       {/* Sketchfab iframe container */}
       <div className="relative w-full h-full flex flex-col justify-center items-center">
         <iframe
+          ref={iframeRef}
           title="NASA EOS AM-1—Terra Satellite"
           allowFullScreen
           allow="autoplay; fullscreen; xr-spatial-tracking"
           className="w-full h-full"
-          src="https://sketchfab.com/models/0d9ed6443b0f41c2b08671ac12019859/embed?autostart=1&camera=0&transparent=1&ui_animations=0&ui_infos=0&ui_stop=0&ui_inspector=0&ui_watermark_link=0&ui_watermark=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=0&ui_theme=dark"
+          id="api-frame"
         />
 
         {/* Interactive hotspots overlaying the iframe */}
         <div className="absolute inset-0 pointer-events-none">
-          {instruments.map((instrument) => (
-            <motion.button
-              key={instrument.id}
-              className="absolute pointer-events-auto"
-              style={{
-                top: instrument.position.top,
-                left: instrument.position.left,
-                transform: 'translate(-50%, -50%)',
-              }}
-              onClick={() => handleInstrumentClick(instrument)}
-              whileHover={{ scale: 1.3 }}
-              whileTap={{ scale: 0.9 }}
-            >
+          {instruments.map((instrument) => {
+            // Usar posições dinâmicas da API se disponíveis, caso contrário usar posições estáticas
+            const dynamicPosition = instrumentPositions[instrument.id];
+            const positionStyle = dynamicPosition
+              ? { top: `${dynamicPosition.y}%`, left: `${dynamicPosition.x}%` }
+              : { top: instrument.position.top, left: instrument.position.left };
+
+            return (
+              <motion.button
+                key={instrument.id}
+                className="absolute pointer-events-auto"
+                style={{
+                  ...positionStyle,
+                  transform: 'translate(-50%, -50%)',
+                }}
+                onClick={() => handleInstrumentClick(instrument)}
+                whileHover={{ scale: 1.3 }}
+                whileTap={{ scale: 0.9 }}
+              >
               {/* Outer pulse ring */}
               <motion.div
                 className="absolute inset-0 rounded-full bg-white opacity-30"
@@ -110,7 +217,8 @@ export const SatelitePage = () => {
                 }}
               />
             </motion.button>
-          ))}
+            );
+          })}
         </div>
 
         {/* Modal for instrument details */}
@@ -144,22 +252,6 @@ export const SatelitePage = () => {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Instructions overlay */}
-        {!activeInstrument && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="absolute top-8 left-1/2 -translate-x-1/2 pointer-events-none"
-          >
-            <div className="bg-black/60 backdrop-blur-sm rounded-full px-6 py-3 border border-white/20">
-              <p className="text-white font-poppins text-sm">
-                Click on the glowing points to explore Terra's instruments
-              </p>
-            </div>
-          </motion.div>
-        )}
       </div>
     </div>
   );

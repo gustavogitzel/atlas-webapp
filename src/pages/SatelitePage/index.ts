@@ -1,1 +1,1 @@
-export { SatelitePage } from './SatelitePage';
+export { SatellitePage } from './SatellitePage';

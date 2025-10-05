@@ -1,6 +1,6 @@
 import { HomePage } from './pages/HomePage/HomePage';
 import { Route, Routes } from 'react-router-dom';
-import { SatelitePage } from './pages/SatelitePage/SatelitePage';
+import { SatellitePage } from './pages/SatelitePage/SatellitePage';
 import { FireGlobePage } from './pages/FireGlobePage';
 
 /**
@@ -13,7 +13,7 @@ function App() {
     <div>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/satellite" element={<SatelitePage />} />
+        <Route path="/satellite" element={<SatellitePage />} />
         <Route path="/fire-globe" element={<FireGlobePage />} />
       </Routes>
     </div>

@@ -49,7 +49,6 @@ export const GuidedTour = ({
 }: GuidedTourProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [interactionCompleted, setInteractionCompleted] = useState(false);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [currentCharacterImage, setCurrentCharacterImage] = useState(characterImage);
 
   const step = steps[currentStep];
@@ -95,12 +94,10 @@ export const GuidedTour = ({
     // Create and play audio
     audio = new Audio(step.audio);
     audio.volume = 1.0;
-    setIsAudioPlaying(true);
 
     // When audio ends, switch back to static image
     const handleEnded = () => {
       console.log('🔇 Audio ended for step:', step.id);
-      setIsAudioPlaying(false);
       setCurrentCharacterImage(characterImage);
     };
 
@@ -116,7 +113,6 @@ export const GuidedTour = ({
         })
         .catch(error => {
           console.error('❌ Error playing audio:', error);
-          setIsAudioPlaying(false);
           setCurrentCharacterImage(characterImage);
         });
     }
@@ -129,7 +125,6 @@ export const GuidedTour = ({
         audio.currentTime = 0;
         audio.removeEventListener('ended', handleEnded);
       }
-      setIsAudioPlaying(false);
       setCurrentCharacterImage(characterImage);
     };
   }, [isOpen, step, currentStep, characterImage]);

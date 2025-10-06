@@ -6,6 +6,7 @@ import { TimelineControls } from '@molecules/TimelineControls';
 import { getLayerUrl, getCOLayerUrl, GLOBE_LAYERS } from '@/config/globeLayers';
 import { composeGlobeTexture } from '@/utils/textureComposer';
 import earthGreyImage from '@/assets/images/earth-grey.jpg';
+import backgroundHome from '@/assets/images/background_home.jpg';
 
 /**
  * InteractiveGlobePage - Combined features from Fire and Flood globes
@@ -318,7 +319,15 @@ export const InteractiveGlobePage = () => {
   }, [selectedBaseLayer, selectedOverlays, currentDate]);
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden">
+    <div
+      className="relative w-full h-screen overflow-hidden"
+      style={{
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${backgroundHome})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       {/* Globe */}
       <Globe
         ref={globeRef}

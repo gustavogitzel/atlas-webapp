@@ -21,11 +21,11 @@ import satelliteGif from '@/assets/gifs/Clipper.gif';
     },h the devastating 2024 floods
  */
 export const createFloodGlobeTour = (
-  setCurrentDateIndex: (value: number) => void,
-  setSelectedBaseLayer: (value: string) => void,
-  setSelectedLayers: (value: string[]) => void,
+  setSelectedLayers: (layers: string[]) => void,
+  setCurrentDateIndex: (index: number) => void,
   globeRef: React.RefObject<any>,
-  uniqueDates: string[]
+  uniqueDates: string[],
+  setShowComparisonMarker?: (show: boolean) => void
 ): TourStep[] => {
   // Helper function to find date index
   const findDateIndex = (targetDate: string): number => {
@@ -48,7 +48,6 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        setSelectedBaseLayer('terrain-relief');
         setSelectedLayers([]);
         setCurrentDateIndex(findDateIndex('2024-04-19'));
         
@@ -72,7 +71,6 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        setSelectedBaseLayer('terrain-relief');
         setSelectedLayers([]);
         setCurrentDateIndex(findDateIndex('2024-04-19'));
         
@@ -140,24 +138,28 @@ export const createFloodGlobeTour = (
             altitude: 1.2,
           }, 2000);
         }
+        
+        // Show marker after zoom completes
+        setTimeout(() => {
+          if (setShowComparisonMarker) {
+            setShowComparisonMarker(true);
+          }
+        }, 2500); // Wait for zoom animation to complete
       },
     },
 
-    // Step 6: Final message with comparison
+    // Step 7: Comparison explanation (shown when modal opens)
     {
-      id: 'final-message',
+      id: 'comparison-explanation',
       title: '🛰️ Terra Satellite',
       description: "Move the slider to see the wound the water left behind. This is no longer a river... but a deep, bruised blue sea swallowing the land—a landscape of homes, fields, and lives submerged.",
       audio: floodA21,
       characterImageAnimated: satelliteGif,
       showOverlay: false,
       showSpotlight: false,
-      action: () => {
-        setSelectedLayers([]);
-      },
     },
 
-    // Step 7: Credits
+    // Step 8: Credits
     {
       id: 'credits',
       title: '🌍 Thank You',

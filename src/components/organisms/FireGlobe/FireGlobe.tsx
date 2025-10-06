@@ -1,12 +1,9 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import Globe from 'react-globe.gl';
 import { Filter, Map, HelpCircle, ChevronDown, ChevronUp, Flame, MapPin, Clock, Play, Pause, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
-import { useFirePoints, useFireStatistics } from '@hooks/useFireData';
-import { useImagePreloader } from '@hooks/useImagePreloader';
+import { useFirePoints } from '@hooks/useFireData';
 import { IconButton } from '@atoms/IconButton';
-import { CacheIndicator } from '@atoms/CacheIndicator';
 import { generatePointTooltip } from '@atoms/PointTooltip';
-import { LoadingScreen } from '@molecules/LoadingScreen';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { FilterPanel } from '@molecules/FilterPanel';
 import { FireDetailModal } from '@molecules/FireDetailModal';
@@ -34,8 +31,7 @@ export interface FireGlobeProps {
 }
 export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobeProps) => {
   // Data fetching with React Query
-  const { data: allFireData, isLoading, isFetching } = useFirePoints({ maxPoints, minConfidence });
-  const { isLoading: loadingStats } = useFireStatistics();
+  const { data: allFireData } = useFirePoints({ maxPoints, minConfidence });
 
   // UI state
   const [selectedPoint, setSelectedPoint] = useState<FireFeature | null>(null);
@@ -141,79 +137,14 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     if (currentDateIndex < uniqueDates.length - 1) {
       const nextDate = new Date(uniqueDates[currentDateIndex + 1]);
       nextDate.setDate(nextDate.getDate() - 1);
-      return nextDate.toISOString().split('T')[0];
     }
     
     return current;
   }, [uniqueDates, currentDateIndex, currentGIBSDate]);
 
-  // Generate all possible image URLs for preloading (all layers + all dates)
-  const imageUrls = useMemo(() => {
-    if (!uniqueDates.length) return [];
-    
-    // Generate URLs for ALL layers (not just selected one)
-    const allUrls: string[] = [];
-    
-    GLOBE_LAYERS.forEach(layer => {
-      // Skip earth-grey as it's a local asset
-      if (layer.id === 'earth-grey') return;
-      
-      uniqueDates.forEach(date => {
-        allUrls.push(getLayerUrl(layer, date, 1));
-      });
-    });
-    
-    return allUrls;
-  }, [uniqueDates]);
-
-  // Generate overlay URLs for all dates
-  const overlayUrls = useMemo(() => {
-    if (!showAerosolLayer || !uniqueDates.length) return undefined;
-    
-    return uniqueDates.map(dateStr => {
-      const date = new Date(dateStr);
-      const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-      const formattedDate = lastDay.toISOString().split('T')[0];
-      
-      const baseUrl = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
-      const params = new URLSearchParams({
-        SERVICE: 'WMS',
-        REQUEST: 'GetMap',
-        layers: 'MISR_Aerosol_Optical_Depth_Avg_Green_Monthly',
-        version: '1.3.0',
-        crs: 'EPSG:4326',
-        transparent: 'true',
-        width: '2048',
-        height: '1024',
-        bbox: '-90,-180,90,180',
-        format: 'image/png',
-        time: formattedDate
-      });
-      
-      return `${baseUrl}?${params.toString()}`;
-    });
-  }, [uniqueDates, showAerosolLayer]);
-
-  // Preload all images for instant layer/date switching
-  const { isLoading: imagesLoading, progress: imageProgress } = useImagePreloader(
-    imageUrls, 
-    10,
-    overlayUrls,
-    showAerosolLayer ? (base, overlay) => composeGlobeTexture(base, overlay, 0.3) : undefined
-  );
-
-  // Current globe texture URL - start with default earth-grey image with aerosol overlay
-  const [gibsGlobeUrl, setGibsGlobeUrl] = useState(earthGreyImage);
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  // Cache for earth-grey with and without overlay (for instant toggle)
-  const earthGreyCache = useRef<{
-    withOverlay: string | null;
-    withoutOverlay: string;
-  }>({
-    withOverlay: null,
-    withoutOverlay: earthGreyImage,
-  });
+  // Current globe texture URL - start with default earth-grey image
+  const [gibsGlobeUrl, setGibsGlobeUrl] = useState<string>(earthGreyImage);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
   
   // Initialize as soon as we have dates
   useEffect(() => {
@@ -222,21 +153,6 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
       setIsInitialized(true);
     }
   }, [uniqueDates, isInitialized]);
-  
-  // Pre-compose earth-grey with overlay in background (optional optimization)
-  useEffect(() => {
-    const preComposeEarthGrey = async () => {
-      if (overlayUrls && overlayUrls.length > 0 && !earthGreyCache.current.withOverlay) {
-        console.log('🎨 Pre-composing earth-grey with overlay...');
-        const overlayUrl = overlayUrls[0];
-        const composed = await composeGlobeTexture(earthGreyImage, overlayUrl, 0.3);
-        earthGreyCache.current.withOverlay = composed;
-        console.log('✅ Earth-grey overlay cached');
-      }
-    };
-    
-    preComposeEarthGrey();
-  }, [overlayUrls]);
   
   // Update globe URL ONLY when user explicitly changes layer or toggles aerosol
   useEffect(() => {
@@ -249,18 +165,35 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
       
       console.log('🔄 Updating texture:', { selectedLayerId, showAerosolLayer, displayDate, globeZoom });
       
-      // Handle aerosol toggle for earth-grey (INSTANT - uses cache)
+      // Handle aerosol toggle for earth-grey
       if (selectedLayerId === 'earth-grey') {
         if (showAerosolLayer) {
-          // Use cached version with overlay (instant!)
-          if (earthGreyCache.current.withOverlay) {
-            console.log('✅ Using earth-grey WITH overlay (cached)');
-            setGibsGlobeUrl(earthGreyCache.current.withOverlay);
-          }
+          // Compose earth-grey with aerosol overlay
+          const date = new Date(displayDate);
+          const formattedDate = date.toISOString().split('T')[0];
+          
+          const aerosolBaseUrl = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
+          const params = new URLSearchParams({
+            service: 'WMS',
+            request: 'GetMap',
+            version: '1.3.0',
+            layers: 'AIRS_L2_Carbon_Monoxide_500hPa_Day',
+            crs: 'EPSG:4326',
+            width: '2048',
+            height: '1024',
+            bbox: '-90,-180,90,180',
+            format: 'image/png',
+            time: formattedDate
+          });
+          
+          const aerosolUrl = `${aerosolBaseUrl}?${params.toString()}`;
+          console.log('🎨 Composing earth-grey WITH overlay');
+          const composed = await composeGlobeTexture(earthGreyImage, aerosolUrl, 0.3);
+          setGibsGlobeUrl(composed);
         } else {
-          // Use cached version without overlay (instant!)
+          // Use static earth-grey without overlay
           console.log('✅ Using earth-grey WITHOUT overlay');
-          setGibsGlobeUrl(earthGreyCache.current.withoutOverlay);
+          setGibsGlobeUrl(earthGreyImage);
         }
         return;
       }
@@ -283,13 +216,26 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         
         // Add aerosol overlay if enabled
         if (showAerosolLayer) {
-          const dateIndex = uniqueDates.indexOf(displayDate);
-          const aerosolUrl = overlayUrls?.[dateIndex];
+          const date = new Date(displayDate);
+          const formattedDate = date.toISOString().split('T')[0];
           
-          if (aerosolUrl) {
-            console.log('🌫️ Adding aerosol overlay...');
-            currentTexture = await composeGlobeTexture(currentTexture, aerosolUrl, 0.3);
-          }
+          const aerosolBaseUrl = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
+          const params = new URLSearchParams({
+            service: 'WMS',
+            request: 'GetMap',
+            version: '1.3.0',
+            layers: 'AIRS_L2_Carbon_Monoxide_500hPa_Day',
+            crs: 'EPSG:4326',
+            width: '2048',
+            height: '1024',
+            bbox: '-90,-180,90,180',
+            format: 'image/png',
+            time: formattedDate
+          });
+          
+          const aerosolUrl = `${aerosolBaseUrl}?${params.toString()}`;
+          console.log('🌫️ Adding aerosol overlay...');
+          currentTexture = await composeGlobeTexture(currentTexture, aerosolUrl, 0.3);
         }
         
         // Add CO overlay if enabled
@@ -309,7 +255,7 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     };
     
     updateTexture();
-  }, [selectedLayerId, showAerosolLayer, showCOLayer, isInitialized, displayDate, globeZoom, uniqueDates, overlayUrls]);
+  }, [selectedLayerId, showAerosolLayer, showCOLayer, isInitialized, displayDate, globeZoom, uniqueDates]);
 
   console.log('Globe URL:', gibsGlobeUrl, 'Date:', displayDate, 'Zoom:', globeZoom);
 
@@ -496,45 +442,6 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
     return regionOption?.region ? [regionOption.region] : [];
   }, [selectedRegion]);
 
-
-  // Show loading screen while preloading images
-  if (imagesLoading) {
-    return (
-      <LoadingScreen
-        title="Loading Fire Imagery"
-        message={`Caching ${imageUrls.length} images for instant playback... ${Math.round(imageProgress)}%`}
-      />
-    );
-  }
-
-  // Show globe immediately, data will populate when ready
-  if (!allFireData || !allFireData.features || allFireData.features.length === 0) {
-    // Return empty globe while loading
-    if (isLoading || loadingStats) {
-      return (
-        <div className="relative w-screen h-screen bg-black overflow-hidden">
-          <Globe
-            ref={globeRef}
-            globeImageUrl={earthGreyImage}
-            backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-          />
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-center">
-            <div className="text-xl mb-2">🔄 Loading fire data...</div>
-            <div className="text-sm opacity-70">{isFetching ? 'Fetching from API' : 'Loading from cache'}</div>
-          </div>
-        </div>
-      );
-    }
-    
-    // Error state - no data available
-    return (
-      <LoadingScreen
-        title="⚠️ No Data Available"
-        message="Please check if the API is online or try again later"
-      />
-    );
-  }
-
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
       {/* Fire Stats - Separate on desktop (left), grouped on mobile (right) */}
@@ -682,20 +589,6 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         </div>
         </div>
       </div>
-
-      {/* Cache Update Indicator */}
-      <div 
-        style={{ 
-          position: 'fixed',
-          bottom: '6rem',
-          left: '50vw',
-          transform: 'translateX(-50%)',
-          zIndex: 50
-        }}
-      >
-        <CacheIndicator isVisible={isFetching} />
-      </div>
-
 
       {/* Filters Panel */}
       <div className="absolute top-32 right-20 z-[10002]">

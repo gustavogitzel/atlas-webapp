@@ -14,6 +14,7 @@ export interface TourStep {
   id: string;
   title: string;
   description: string;
+  audioUrl?: string; // Optional audio narration for the step
   target?: string; // CSS selector for the element to highlight (optional for intro steps)
   position?: 'top' | 'bottom' | 'left' | 'right';
   showOverlay?: boolean; // Show dark overlay (default true)

@@ -5,8 +5,6 @@ import { IconButton } from '@atoms/IconButton';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { GuidedTour } from '@organisms/GuidedTour';
 import { ImageComparisonModal } from '@molecules/ImageComparisonModal';
-import { FullPageLoading } from '@molecules/FullPageLoading';
-import { useFloodTourPreload } from '@/hooks/useFloodTourPreload';
 import { createFloodGlobeTour } from '@/data/floodGlobeTour';
 import satelliteImage from '@/assets/images/satellite.png';
 import beforeFloodImage from '@/assets/images/2023-esquerda.jpg';
@@ -179,20 +177,6 @@ const FLOOD_INFO = {
 };
 
 export const FloodGlobePage = () => {
-  const { isLoading: loadingImages, progress } = useFloodTourPreload();
-  
-  // Show loading for images
-  if (loadingImages) {
-    return (
-      <FullPageLoading
-        title="Loading Flood Tour"
-        message="Preparing imagery..."
-        progress={progress}
-        icon="🌊"
-      />
-    );
-  }
-  
   const globeRef = useRef<any>(null);
   // Comparison modal state
   const comparisonShownRef = useRef(false);

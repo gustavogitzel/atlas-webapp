@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { getLayerUrl, GLOBE_LAYERS } from '@/config/globeLayers';
 
 // Global cache to store preloaded images (persists across component remounts)
 const imageCache = new Map<string, HTMLImageElement>();
@@ -33,15 +32,12 @@ export const useFloodTourPreload = () => {
         '2024-05-15'  // End
       ];
 
-      // Get layer objects
-      const reliefLayer = GLOBE_LAYERS.find(l => l.id === 'ASTER_GDEM_Color_Shaded_Relief')!;
-      
       // Generate all URLs
       const urls: string[] = [];
       
-      // Relief map images for key dates only
+      // Relief map images for key dates only (generate URL directly)
       keyDates.forEach(date => {
-        const url = getLayerUrl(reliefLayer, date, 1);
+        const url = `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&layers=ASTER_GDEM_Color_Shaded_Relief&version=1.3.0&crs=EPSG:4326&transparent=false&width=2048&height=1024&bbox=-90,-180,90,180&format=image/jpeg&time=${date}`;
         urls.push(url);
       });
 

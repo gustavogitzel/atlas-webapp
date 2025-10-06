@@ -74,26 +74,10 @@ export const createFireGlobeTour = (
           altitude: 1.5, // Zoom level to view entire Amazon rainforest
         }, 2000);
       }
-      
-      // Auto-evolve through dates to 16-AUG-2004
-      const timeout = setTimeout(() => {
-        const dates = ['2004-07-27', '2004-08-01', '2004-08-06', '2004-08-11', '2004-08-16'];
-        let index = 0;
-        const interval = setInterval(() => {
-          if (index < dates.length) {
-            setCurrentDateIndex(findDateIndex(dates[index]));
-            index++;
-          } else {
-            clearInterval(interval);
-          }
-        }, 2000);
-        activeIntervals.push(interval);
-      }, 2000);
-      activeIntervals.push(timeout as any);
     },
   },
 
-  // Step 5: The Smoke - 16-AUG-2004
+  // Step 5: The Smoke - Evolve from 22-JUL to 16-AUG-2004
   {
     id: 'smoke-appears',
     title: '🛰️ Terra Satellite',
@@ -101,7 +85,24 @@ export const createFireGlobeTour = (
     audioUrl: elli_a10,
     showOverlay: false,
     showSpotlight: false,
-    action: () => clearAllIntervals(),
+    action: () => {
+      clearAllIntervals();
+      
+      // Start evolving through dates every 5 days
+      const dates = ['2004-07-27', '2004-08-01', '2004-08-06', '2004-08-11', '2004-08-16'];
+      let index = 0;
+      
+      const interval = setInterval(() => {
+        if (index < dates.length) {
+          setCurrentDateIndex(findDateIndex(dates[index]));
+          index++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 2000);
+      
+      activeIntervals.push(interval);
+    },
   },
 
   // Step 6: Understanding My View (The Gaps)
@@ -112,7 +113,6 @@ export const createFireGlobeTour = (
     audioUrl: elli_a11,
     showOverlay: false,
     showSpotlight: false,
-    action: () => clearAllIntervals(),
   },
 
   // Step 7 Part 1: The Fever - Fire points focus (with auto-evolution to DEC)
@@ -206,7 +206,6 @@ export const createFireGlobeTour = (
     audioUrl: elli_a15,
     showOverlay: false,
     showSpotlight: false,
-    action: () => clearAllIntervals(),
   },
   
   // Step 12: Next Story - Flood Globe

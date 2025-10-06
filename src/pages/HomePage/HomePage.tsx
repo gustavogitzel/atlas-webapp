@@ -2,11 +2,9 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SplitText } from '@atoms/SplitText';
-import { ServiceWorkerStatus } from '@atoms/ServiceWorkerStatus';
 import { useSnapScroll, useIntersectionObserver } from '@/hooks';
 import gifsatelite from "../../assets/gifs/okok.gif";
 import gifworld from "../../assets/gifs/gif_world.gif";
-import clipperbase from "../../assets/images/clippercomfundo.png";
 
 import backgroundHome from '../../assets/images/background_home.jpg';
 

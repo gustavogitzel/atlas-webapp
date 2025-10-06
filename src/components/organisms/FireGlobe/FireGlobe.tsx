@@ -16,6 +16,7 @@ import { REGION_OPTIONS } from '@/data/amazonRegion';
 import { createFireGlobeTour } from '@/data/fireGlobeTour';
 import { getLayerUrl, getDefaultLayer, GLOBE_LAYERS, getCOLayerUrl } from '@/config/globeLayers';
 import { composeGlobeTexture } from '@/utils/textureComposer';
+import { getCachedImageUrl } from '@/hooks/useFireTourPreload';
 import satelliteImage from '@/assets/images/satellite.png';
 import earthGreyImage from '@/assets/images/earth-grey.jpg';
 import type { FireFeature } from '@/types/fire';
@@ -205,14 +206,18 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
       const baseUrl = getLayerUrl(layer, displayDate, globeZoom);
       console.log('🔗 Base URL generated:', baseUrl.substring(0, 150));
       
+      // Try to get from cache first
+      const cachedUrl = getCachedImageUrl(baseUrl);
+      const finalBaseUrl = cachedUrl;
+      
       // Check if any overlays are enabled
       const hasOverlays = showAerosolLayer || showCOLayer;
       
       if (hasOverlays) {
         console.log('🎨 Composing with overlays:', { aerosol: showAerosolLayer, co: showCOLayer });
         
-        // Start with base layer
-        let currentTexture = baseUrl;
+        // Start with cached base layer
+        let currentTexture = finalBaseUrl;
         
         // Add aerosol overlay if enabled
         if (showAerosolLayer) {
@@ -248,9 +253,9 @@ export const FireGlobe = ({ maxPoints = 10000, minConfidence = 0 }: FireGlobePro
         setGibsGlobeUrl(currentTexture);
         console.log('✅ Composed texture with overlays set');
       } else {
-        console.log('🌍 No overlays - using base layer only');
-        setGibsGlobeUrl(baseUrl);
-        console.log('✅ Base texture set:', baseUrl.substring(0, 150));
+        console.log('🌍 No overlays - using cached base layer');
+        setGibsGlobeUrl(finalBaseUrl);
+        console.log('✅ Base texture set:', finalBaseUrl.substring(0, 150));
       }
     };
     

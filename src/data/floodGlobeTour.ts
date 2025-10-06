@@ -27,6 +27,15 @@ export const createFloodGlobeTour = (
   uniqueDates: string[],
   setShowComparisonMarker?: (show: boolean) => void
 ): TourStep[] => {
+  // Store interval references to clean up
+  let activeIntervals: NodeJS.Timeout[] = [];
+  let hasExecuted: { [key: string]: boolean } = {};
+  
+  const clearAllIntervals = () => {
+    activeIntervals.forEach(interval => clearInterval(interval));
+    activeIntervals = [];
+  };
+
   // Helper function to find date index
   const findDateIndex = (targetDate: string): number => {
     if (!Array.isArray(uniqueDates) || uniqueDates.length === 0) {
@@ -98,7 +107,7 @@ export const createFloodGlobeTour = (
       },
     },
 
-    // Step 3: 28-APR-2024 - Focus on Rio Grande do Sul
+    // Step 3: Rain Evolution - Zoom to Rio Grande do Sul and evolve to 28-APR
     {
       id: 'rain-evolution',
       title: '🛰️ Terra Satellite',
@@ -108,8 +117,12 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        setCurrentDateIndex(findDateIndex('2024-04-28'));
+        if (hasExecuted['rain-evolution']) return;
+        hasExecuted['rain-evolution'] = true;
         
+        clearAllIntervals();
+        
+        // Zoom to Rio Grande do Sul
         if (globeRef.current) {
           globeRef.current.pointOfView({
             lat: -29.6898,
@@ -117,11 +130,33 @@ export const createFloodGlobeTour = (
             altitude: 1.2,
           }, 2000);
         }
+        
+        // Start evolving through dates from 19-APR to 28-APR
+        const startDate = '2024-04-19';
+        const endDate = '2024-04-28';
+        const startIndex = findDateIndex(startDate);
+        const endIndex = findDateIndex(endDate);
+        
+        if (startIndex !== -1 && endIndex !== -1) {
+          let currentIndex = startIndex;
+          
+          const interval = setInterval(() => {
+            if (currentIndex <= endIndex) {
+              setCurrentDateIndex(currentIndex);
+              currentIndex++;
+            } else {
+              clearInterval(interval);
+            }
+          }, 1000); // 1 second per day
+          
+          activeIntervals.push(interval);
+        }
       },
     },
 
+    // Step 4: Aftermath - Evolve to 15-MAY and show marker
     {
-      id: 'rain-evolution',
+      id: 'aftermath',
       title: '🛰️ Terra Satellite',
       description: "When the clouds finally cleared, I saw the silent tragedy that remained below.",
       audio: floodA20,
@@ -129,22 +164,37 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        setCurrentDateIndex(findDateIndex('2024-04-28'));
+        if (hasExecuted['aftermath']) return;
+        hasExecuted['aftermath'] = true;
         
-        if (globeRef.current) {
-          globeRef.current.pointOfView({
-            lat: -29.6898,
-            lng: -53.1485,
-            altitude: 1.2,
-          }, 2000);
+        clearAllIntervals();
+        
+        // Evolve from 28-APR to 15-MAY
+        const startDate = '2024-04-28';
+        const endDate = '2024-05-15';
+        const startIndex = findDateIndex(startDate);
+        const endIndex = findDateIndex(endDate);
+        
+        if (startIndex !== -1 && endIndex !== -1) {
+          let currentIndex = startIndex;
+          
+          const interval = setInterval(() => {
+            if (currentIndex <= endIndex) {
+              setCurrentDateIndex(currentIndex);
+              currentIndex++;
+            } else {
+              clearInterval(interval);
+              // Show marker after evolution completes
+              setTimeout(() => {
+                if (setShowComparisonMarker) {
+                  setShowComparisonMarker(true);
+                }
+              }, 500);
+            }
+          }, 800); // 0.8 seconds per day
+          
+          activeIntervals.push(interval);
         }
-        
-        // Show marker after zoom completes
-        setTimeout(() => {
-          if (setShowComparisonMarker) {
-            setShowComparisonMarker(true);
-          }
-        }, 2500); // Wait for zoom animation to complete
       },
     },
 

@@ -5,11 +5,13 @@ import { IconButton } from '@atoms/IconButton';
 import { TimelineControls } from '@molecules/TimelineControls';
 import { GuidedTour } from '@organisms/GuidedTour';
 import { ImageComparisonModal } from '@molecules/ImageComparisonModal';
+import { BackgroundMusic } from '@molecules/BackgroundMusic'; 
 import { createFloodGlobeTour } from '@/data/floodGlobeTour';
 import satelliteImage from '@/assets/images/satellite.png';
 import beforeFloodImage from '@/assets/images/2023-esquerda.jpg';
 import afterFloodImage from '@/assets/images/2024-direita.jpg';
 import flood2dayImage from '@/assets/images/flood2day.jpg';
+import musicFile from '@/assets/audios/music.mp3';
 
 /**
  * FloodGlobePage - Visualização de enchentes no Brasil
@@ -399,6 +401,9 @@ export const FloodGlobePage = () => {
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
+      {/* Background Music */}
+      <BackgroundMusic audioSrc={musicFile} shouldPlay={true} initialVolume={0.3} />
+      
       {/* Info Panel */}
       {showInfo && (
         <div className="absolute top-4 left-4 z-10 max-w-md">

@@ -116,11 +116,13 @@ export const createFloodGlobeTour = (
       characterImageAnimated: satelliteGif,
       showOverlay: false,
       showSpotlight: false,
-      action: () => {
+      action: (setIsAnimating) => {
         if (hasExecuted['rain-evolution']) return;
         hasExecuted['rain-evolution'] = true;
         
         clearAllIntervals();
+
+        if (setIsAnimating) setIsAnimating(true);
         
         // Zoom to Rio Grande do Sul
         if (globeRef.current) {
@@ -146,6 +148,7 @@ export const createFloodGlobeTour = (
               currentIndex++;
             } else {
               clearInterval(interval);
+              if (setIsAnimating) setIsAnimating(false);
             }
           }, 1000); // 1 second per day
           
@@ -163,11 +166,13 @@ export const createFloodGlobeTour = (
       characterImageAnimated: satelliteGif,
       showOverlay: false,
       showSpotlight: false,
-      action: () => {
+      action: (setIsAnimating) => {
         if (hasExecuted['aftermath']) return;
         hasExecuted['aftermath'] = true;
         
         clearAllIntervals();
+
+        if (setIsAnimating) setIsAnimating(true);
         
         // Evolve from 28-APR to 15-MAY
         const startDate = '2024-04-28';
@@ -184,6 +189,8 @@ export const createFloodGlobeTour = (
               currentIndex++;
             } else {
               clearInterval(interval);
+              if (setIsAnimating) setIsAnimating(false);
+
               // Show marker after evolution completes
               setTimeout(() => {
                 if (setShowComparisonMarker) {

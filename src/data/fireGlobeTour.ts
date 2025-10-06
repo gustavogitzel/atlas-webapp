@@ -86,22 +86,28 @@ export const createFireGlobeTour = (
     audioUrl: elli_a10,
     showOverlay: false,
     showSpotlight: false,
-    action: () => {
+    action: (setIsAnimating) => {
       if (hasExecuted['smoke-appears']) return;
       hasExecuted['smoke-appears'] = true;
       
       clearAllIntervals();
+      setShowCOLayer(false);
+      
+      // Block navigation during animation
+      if (setIsAnimating) setIsAnimating(true);
       
       // Start evolving through dates every 5 days
       const dates = ['2004-07-27', '2004-08-01', '2004-08-06', '2004-08-11', '2004-08-16'];
       let index = 0;
-        setShowCOLayer(false);
+      
       const interval = setInterval(() => {
         if (index < dates.length) {
           setCurrentDateIndex(findDateIndex(dates[index]));
           index++;
         } else {
           clearInterval(interval);
+          // Unblock navigation when animation completes
+          if (setIsAnimating) setIsAnimating(false);
         }
       }, 1000);
       
@@ -139,13 +145,16 @@ export const createFireGlobeTour = (
     audioUrl: elli_a12,
     showOverlay: false,
     showSpotlight: false,
-    action: () => {
+    action: (setIsAnimating) => {
       if (hasExecuted['fire-fever']) return;
       hasExecuted['fire-fever'] = true;
-      
+
       clearAllIntervals();
 
       setShowCOLayer(false);
+
+      if (setIsAnimating) setIsAnimating(true);
+
       // Auto-evolve through dates every 5 days from AUG to DEC
       const timeout = setTimeout(() => {
         const dates = [
@@ -162,6 +171,7 @@ export const createFireGlobeTour = (
             index++;
           } else {
             clearInterval(interval);
+            if (setIsAnimating) setIsAnimating(false);
           }
         }, 800);
         activeIntervals.push(interval);
@@ -180,7 +190,7 @@ export const createFireGlobeTour = (
     showSpotlight: false,
     action: () => {
       clearAllIntervals();
-      
+
       // Back to 22-JUL-2004, Blue Marble, Points OFF, CO ON
       setSelectedLayerId('blue-marble');
       setVisualizationMode('heatmap'); // Turn off points
@@ -197,12 +207,14 @@ export const createFireGlobeTour = (
     audioUrl: elli_a14,
     showOverlay: false,
     showSpotlight: false,
-    action: () => {
+    action: (setIsAnimating) => {
       if (hasExecuted['co-evolution']) return;
       hasExecuted['co-evolution'] = true;
-      
+
       clearAllIntervals();
-      
+
+      if (setIsAnimating) setIsAnimating(true);
+
       // Auto-evolve through monthly CO data
       const timeout = setTimeout(() => {
         const dates = ['2004-08-22', '2004-09-22', '2004-10-22', '2004-11-22', '2004-12-04'];
@@ -213,6 +225,7 @@ export const createFireGlobeTour = (
             index++;
           } else {
             clearInterval(interval);
+            if (setIsAnimating) setIsAnimating(false);
           }
         }, 1500);
         activeIntervals.push(interval);

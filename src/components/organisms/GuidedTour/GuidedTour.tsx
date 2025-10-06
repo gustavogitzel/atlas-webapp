@@ -22,7 +22,7 @@ export interface TourStep {
   requiresInteraction?: boolean; // Step requires user interaction to proceed
   interactionType?: 'click' | 'hover' | 'custom';
   interactionTarget?: string; // Selector for interaction element
-  action?: () => void; // Optional action to perform when step is shown
+  action?: (setIsAnimating?: (value: boolean) => void) => void; // Optional action to perform when step is shown
   onNext?: () => void; // Optional action before going to next step
   autoProgress?: boolean; // Automatically progress to next step after duration
   progressDuration?: number; // Duration in ms before auto-progressing (default 3000)
@@ -50,6 +50,7 @@ export const GuidedTour = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [interactionCompleted, setInteractionCompleted] = useState(false);
   const [currentCharacterImage, setCurrentCharacterImage] = useState(characterImage);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const step = steps[currentStep];
   const isLastStep = currentStep === steps.length - 1;
@@ -62,7 +63,8 @@ export const GuidedTour = ({
     if (!isOpen || !step) return;
 
     if (step.action) {
-      step.action();
+      // Pass setIsAnimating to the action if it needs to block navigation
+      step.action(setIsAnimating);
     }
     
     // Notificar mudança de step
@@ -246,10 +248,10 @@ export const GuidedTour = ({
             {/* Previous button */}
             <button
               onClick={handlePrev}
-              disabled={isFirstStep}
+              disabled={isFirstStep || isAnimating}
               className={cn(
                 'p-4 rounded-full backdrop-blur-md border transition-all',
-                isFirstStep
+                isFirstStep || isAnimating
                   ? 'bg-gray-800/50 border-gray-700 text-gray-600 cursor-not-allowed'
                   : 'bg-black/80 border-white/20 text-white hover:bg-white/10 hover:scale-110'
               )}
@@ -277,10 +279,10 @@ export const GuidedTour = ({
             ) : (
               <button
                 onClick={handleNext}
-                disabled={step.requiresInteraction && !interactionCompleted}
+                disabled={(step.requiresInteraction && !interactionCompleted) || isAnimating}
                 className={cn(
                   'p-4 rounded-full backdrop-blur-md border transition-all',
-                  step.requiresInteraction && !interactionCompleted
+                  (step.requiresInteraction && !interactionCompleted) || isAnimating
                     ? 'bg-gray-800/50 border-gray-700 text-gray-600 cursor-not-allowed'
                     : 'bg-blue-500 border-blue-400 text-white hover:bg-blue-600 hover:scale-110 shadow-lg shadow-blue-500/50'
                 )}

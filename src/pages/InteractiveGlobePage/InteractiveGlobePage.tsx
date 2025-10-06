@@ -240,6 +240,12 @@ export const InteractiveGlobePage = () => {
           let opacity = 0.6;
 
           switch (overlayId) {
+            case 'fire-points':
+              // MODIS/VIIRS Fire and Thermal Anomalies
+              overlayUrl = `https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&layers=MODIS_Aqua_Thermal_Anomalies_All&version=1.3.0&CRS=EPSG:4326&transparent=true&width=2048&height=1024&bbox=-90,-180,90,180&FORMAT=image/png&time=${currentDate}`;
+              opacity = 0.9;
+              console.log('🔥 Fire Points URL:', overlayUrl);
+              break;
             case 'carbon-monoxide':
               const coUrl = getCOLayerUrl(currentDate, 1);
               if (coUrl) overlayUrl = coUrl;
@@ -272,11 +278,20 @@ export const InteractiveGlobePage = () => {
           }
 
           if (overlayUrl) {
-            // Compose current texture with overlay
-            currentTexture = await composeGlobeTexture(currentTexture, overlayUrl, opacity);
+            console.log(`🎨 Composing overlay "${overlayId}" with opacity ${opacity}`);
+            console.log(`📍 Overlay URL: ${overlayUrl.substring(0, 150)}...`);
+            try {
+              currentTexture = await composeGlobeTexture(currentTexture, overlayUrl, opacity);
+              console.log(`✅ Successfully composed "${overlayId}"`);
+            } catch (error) {
+              console.error(`❌ Failed to compose "${overlayId}":`, error);
+            }
+          } else {
+            console.warn(`⚠️ No URL generated for overlay "${overlayId}"`);
           }
         }
 
+        console.log('✅ All overlays composed. Setting final texture...');
         setGlobeTexture(currentTexture);
         
         // Cache the composed texture

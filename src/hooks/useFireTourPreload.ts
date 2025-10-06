@@ -126,5 +126,17 @@ export const useFireTourPreload = () => {
  */
 export const getCachedImageUrl = (url: string): string => {
   const cached = imageCache.get(url);
-  return cached?.src || url;
+  if (cached) {
+    console.log(`🎯 Using cached image for: ${url.substring(0, 100)}...`);
+    return cached.src;
+  }
+  console.log(`⚠️ Cache miss for: ${url.substring(0, 100)}...`);
+  return url;
+};
+
+/**
+ * Check if image is in cache
+ */
+export const isImageCached = (url: string): boolean => {
+  return imageCache.has(url);
 };

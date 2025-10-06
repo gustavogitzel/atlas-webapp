@@ -16,14 +16,22 @@ export const useFloodTourPreload = () => {
 
   useEffect(() => {
     const preloadImages = async () => {
-      // All dates used in the Flood Tour (19-APR-2024 to 15-MAY-2024)
-      const tourDates: string[] = [];
-      const startDate = new Date('2024-04-19');
-      const endDate = new Date('2024-05-15');
-      
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        tourDates.push(d.toISOString().split('T')[0]);
-      }
+      // Key dates used in the Flood Tour (only important dates, not all)
+      const keyDates = [
+        '2024-04-19', // Start
+        '2024-04-20',
+        '2024-04-22',
+        '2024-04-24',
+        '2024-04-26',
+        '2024-04-28', // Rain peak
+        '2024-04-30',
+        '2024-05-02',
+        '2024-05-05',
+        '2024-05-08',
+        '2024-05-10',
+        '2024-05-12',
+        '2024-05-15'  // End
+      ];
 
       // Get layer objects
       const reliefLayer = GLOBE_LAYERS.find(l => l.id === 'ASTER_GDEM_Color_Shaded_Relief')!;
@@ -31,26 +39,10 @@ export const useFloodTourPreload = () => {
       // Generate all URLs
       const urls: string[] = [];
       
-      // Relief map images for all dates
-      tourDates.forEach(date => {
+      // Relief map images for key dates only
+      keyDates.forEach(date => {
         const url = getLayerUrl(reliefLayer, date, 1);
         urls.push(url);
-      });
-
-      // Cloud layers for key dates
-      const cloudLayers = [
-        'MODIS_Terra_Cloud_Phase_Optical_Properties',
-        'MODIS_Terra_Cloud_Optical_Thickness'
-      ];
-      
-      cloudLayers.forEach(layerName => {
-        const layer = GLOBE_LAYERS.find(l => l.id === layerName);
-        if (layer) {
-          tourDates.forEach(date => {
-            const url = getLayerUrl(layer, date, 1);
-            urls.push(url);
-          });
-        }
       });
 
       console.log(`🌊 Preloading ${urls.length} images for Flood Tour...`);

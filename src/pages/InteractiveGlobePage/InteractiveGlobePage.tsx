@@ -128,6 +128,8 @@ export const InteractiveGlobePage = () => {
   const [endDate, setEndDate] = useState<string>(DATE_RANGE.end);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(true);
+  const [overlayError, setOverlayError] = useState<string | null>(null);
+  const [showQuickFilters, setShowQuickFilters] = useState(false);
 
   // Toggle overlay
   const toggleOverlay = (overlayId: string) => {
@@ -136,6 +138,60 @@ export const InteractiveGlobePage = () => {
         ? prev.filter(id => id !== overlayId)
         : [...prev, overlayId]
     );
+  };
+
+  // Quick date filters
+  const applyQuickFilter = (filter: string) => {
+    const today = new Date();
+    let newStartDate: Date;
+    
+    switch (filter) {
+      case 'last-week':
+        newStartDate = new Date(today);
+        newStartDate.setDate(today.getDate() - 7);
+        break;
+      case 'last-month':
+        newStartDate = new Date(today);
+        newStartDate.setMonth(today.getMonth() - 1);
+        break;
+      case 'last-3-months':
+        newStartDate = new Date(today);
+        newStartDate.setMonth(today.getMonth() - 3);
+        break;
+      case 'last-6-months':
+        newStartDate = new Date(today);
+        newStartDate.setMonth(today.getMonth() - 6);
+        break;
+      case 'last-year':
+        newStartDate = new Date(today);
+        newStartDate.setFullYear(today.getFullYear() - 1);
+        break;
+      case 'last-2-years':
+        newStartDate = new Date(today);
+        newStartDate.setFullYear(today.getFullYear() - 2);
+        break;
+      case 'last-5-years':
+        newStartDate = new Date(today);
+        newStartDate.setFullYear(today.getFullYear() - 5);
+        break;
+      case 'last-10-years':
+        newStartDate = new Date(today);
+        newStartDate.setFullYear(today.getFullYear() - 10);
+        break;
+      case 'all-time':
+        setStartDate(DATE_RANGE.start);
+        setEndDate(DATE_RANGE.end);
+        setCurrentDateIndex(0);
+        setShowQuickFilters(false);
+        return;
+      default:
+        return;
+    }
+    
+    setStartDate(newStartDate.toISOString().split('T')[0]);
+    setEndDate(today.toISOString().split('T')[0]);
+    setCurrentDateIndex(0);
+    setShowQuickFilters(false);
   };
 
   // Generate dates for selected range
@@ -152,6 +208,16 @@ export const InteractiveGlobePage = () => {
   }, [startDate, endDate]);
 
   const currentDate = uniqueDates[currentDateIndex] || 'N/A';
+
+  // Auto-dismiss overlay error after 5 seconds
+  useEffect(() => {
+    if (overlayError) {
+      const timer = setTimeout(() => {
+        setOverlayError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [overlayError]);
 
   // Auto-play with configurable speed
   useEffect(() => {
@@ -284,8 +350,13 @@ export const InteractiveGlobePage = () => {
             try {
               currentTexture = await composeGlobeTexture(currentTexture, overlayUrl, opacity);
               console.log(`✅ Successfully composed "${overlayId}"`);
+              setOverlayError(null); // Clear error on success
             } catch (error) {
               console.error(`❌ Failed to compose "${overlayId}":`, error);
+              const overlayName = OVERLAYS.find(o => o.id === overlayId)?.name || overlayId;
+              setOverlayError(`${overlayName} not available for ${currentDate}`);
+              // Remove failed overlay from selection
+              setSelectedOverlays(prev => prev.filter(id => id !== overlayId));
             }
           } else {
             console.warn(`⚠️ No URL generated for overlay "${overlayId}"`);
@@ -351,12 +422,21 @@ export const InteractiveGlobePage = () => {
             <p className="text-xs text-gray-500 mt-1">
               {uniqueDates.length.toLocaleString()} days of data
             </p>
-            <button
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline"
-            >
-              {showDatePicker ? 'Hide' : 'Change'} Date Range
-            </button>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                className="text-xs text-blue-400 hover:text-blue-300 underline"
+              >
+                {showDatePicker ? 'Hide' : 'Change'} Date Range
+              </button>
+              <span className="text-gray-500">•</span>
+              <button
+                onClick={() => setShowQuickFilters(!showQuickFilters)}
+                className="text-xs text-green-400 hover:text-green-300 underline"
+              >
+                Quick Filters
+              </button>
+            </div>
           </div>
 
           {/* Info Button */}
@@ -367,6 +447,85 @@ export const InteractiveGlobePage = () => {
             title="Information"
           />
         </div>
+
+        {/* Quick Filters */}
+        {showQuickFilters && (
+          <div className="bg-black/80 backdrop-blur-md border border-white/20 rounded-lg p-4">
+            <h3 className="text-sm font-bold text-white mb-3">Quick Date Filters</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Short Term */}
+              <div className="col-span-2">
+                <p className="text-xs text-gray-400 mb-2 font-semibold">Short Term</p>
+              </div>
+              <button
+                onClick={() => applyQuickFilter('last-week')}
+                className="px-3 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/20 hover:from-blue-600/30 hover:to-blue-500/30 border border-blue-500/30 rounded text-white text-xs transition-all hover:scale-105"
+              >
+                📅 Last Week
+              </button>
+              <button
+                onClick={() => applyQuickFilter('last-month')}
+                className="px-3 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/20 hover:from-blue-600/30 hover:to-blue-500/30 border border-blue-500/30 rounded text-white text-xs transition-all hover:scale-105"
+              >
+                📅 Last Month
+              </button>
+              
+              {/* Medium Term */}
+              <div className="col-span-2 mt-2">
+                <p className="text-xs text-gray-400 mb-2 font-semibold">Medium Term</p>
+              </div>
+              <button
+                onClick={() => applyQuickFilter('last-3-months')}
+                className="px-3 py-2 bg-gradient-to-r from-green-600/20 to-green-500/20 hover:from-green-600/30 hover:to-green-500/30 border border-green-500/30 rounded text-white text-xs transition-all hover:scale-105"
+              >
+                📊 Last 3 Months
+              </button>
+              <button
+                onClick={() => applyQuickFilter('last-6-months')}
+                className="px-3 py-2 bg-gradient-to-r from-green-600/20 to-green-500/20 hover:from-green-600/30 hover:to-green-500/30 border border-green-500/30 rounded text-white text-xs transition-all hover:scale-105"
+              >
+                📊 Last 6 Months
+              </button>
+              
+              {/* Long Term */}
+              <div className="col-span-2 mt-2">
+                <p className="text-xs text-gray-400 mb-2 font-semibold">Long Term</p>
+              </div>
+              <button
+                onClick={() => applyQuickFilter('last-year')}
+                className="px-3 py-2 bg-gradient-to-r from-purple-600/20 to-purple-500/20 hover:from-purple-600/30 hover:to-purple-500/30 border border-purple-500/30 rounded text-white text-xs transition-all hover:scale-105"
+              >
+                🗓️ Last Year
+              </button>
+              <button
+                onClick={() => applyQuickFilter('last-2-years')}
+                className="px-3 py-2 bg-gradient-to-r from-purple-600/20 to-purple-500/20 hover:from-purple-600/30 hover:to-purple-500/30 border border-purple-500/30 rounded text-white text-xs transition-all hover:scale-105"
+              >
+                🗓️ Last 2 Years
+              </button>
+              <button
+                onClick={() => applyQuickFilter('last-5-years')}
+                className="px-3 py-2 bg-gradient-to-r from-orange-600/20 to-orange-500/20 hover:from-orange-600/30 hover:to-orange-500/30 border border-orange-500/30 rounded text-white text-xs transition-all hover:scale-105"
+              >
+                📈 Last 5 Years
+              </button>
+              <button
+                onClick={() => applyQuickFilter('last-10-years')}
+                className="px-3 py-2 bg-gradient-to-r from-orange-600/20 to-orange-500/20 hover:from-orange-600/30 hover:to-orange-500/30 border border-orange-500/30 rounded text-white text-xs transition-all hover:scale-105"
+              >
+                📈 Last 10 Years
+              </button>
+              
+              {/* All Time */}
+              <button
+                onClick={() => applyQuickFilter('all-time')}
+                className="col-span-2 mt-2 px-3 py-2 bg-gradient-to-r from-red-600/20 to-red-500/20 hover:from-red-600/30 hover:to-red-500/30 border border-red-500/30 rounded text-white text-xs font-semibold transition-all hover:scale-105"
+              >
+                🌍 All Time (2002-2024)
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Date Range Picker */}
         {showDatePicker && (
@@ -433,6 +592,25 @@ export const InteractiveGlobePage = () => {
             <div>🛰️ <strong>Data Sources:</strong> MODIS, VIIRS, Landsat</div>
             <div>🌍 <strong>Coverage:</strong> Global</div>
             <div>📅 <strong>Temporal:</strong> 2004-2024</div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay Error Notification */}
+      {overlayError && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-red-500/90 backdrop-blur-md border border-red-400 rounded-lg px-4 py-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="text-white text-2xl">⚠️</div>
+            <div>
+              <p className="text-white font-semibold text-sm">{overlayError}</p>
+              <p className="text-red-100 text-xs mt-0.5">The overlay has been disabled for this date</p>
+            </div>
+            <button
+              onClick={() => setOverlayError(null)}
+              className="ml-2 text-white hover:text-red-100 transition-colors"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

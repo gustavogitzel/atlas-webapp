@@ -181,12 +181,6 @@ export const ALL_REGIONS = [
 export const REGION_OPTIONS = [
   { value: 'none', label: 'No Region' },
   { value: 'amazon', label: 'Amazon Rainforest', region: AMAZON_REGION },
-  { value: 'cerrado', label: 'Cerrado (Brazilian Savanna)', region: CERRADO_REGION },
-  { value: 'pantanal', label: 'Pantanal (Wetlands)', region: PANTANAL_REGION },
-  { value: 'atlantic', label: 'Atlantic Forest', region: ATLANTIC_FOREST_REGION },
-  { value: 'congo', label: 'Congo Basin', region: CONGO_BASIN_REGION },
-  { value: 'southeast_asia', label: 'Southeast Asia', region: SOUTHEAST_ASIA_REGION },
-  { value: 'australia', label: 'Australia', region: AUSTRALIA_REGION },
 ];
 
 /**

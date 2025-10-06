@@ -1,6 +1,7 @@
 import { LoadingSpinner } from '@atoms/LoadingSpinner';
 import { ProgressBar } from '@atoms/ProgressBar';
 import { cn } from '@/lib/utils';
+import backgroundHome from '@/assets/images/background_home.jpg';
 
 /**
  * LoadingScreen Molecule Component
@@ -28,16 +29,17 @@ export const LoadingScreen = ({
         className
       )}
       style={{
-        background: 'radial-gradient(ellipse at bottom, #0d1d31 0%, #0c0d13 100%)',
+        backgroundImage: `linear-gradient(to bottom, rgba(0, 20, 60, 0.85), rgba(0, 10, 40, 0.95)), url(${backgroundHome})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Starfield Background */}
+      {/* Navy gradient overlay for depth */}
       <div 
-        className="absolute inset-0 opacity-60"
+        className="absolute inset-0"
         style={{
-          backgroundImage: 'url(//unpkg.com/three-globe/example/img/night-sky.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0, 10, 30, 0.6) 100%)',
         }}
       />
 

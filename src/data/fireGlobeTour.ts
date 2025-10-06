@@ -6,6 +6,7 @@ import elli_a12 from '@/assets/audios/elli_a12.mp3';
 import elli_a13 from '@/assets/audios/elli_a13.mp3';
 import elli_a14 from '@/assets/audios/elli_a14.mp3';
 import elli_a15 from '@/assets/audios/elli_a15.mp3';
+import satelliteGif from '@/assets/gifs/Clipper.gif';
 
 /**
  * Fire Globe Tour - Amazon Rainforest Fire Story
@@ -51,7 +52,8 @@ export const createFireGlobeTour = (
     id: 'amazon-intro',
     title: '🛰️ Terra Satellite',
     description: "Come. Let's put my senses to work. I want to show you a place vital to us all: the Amazon rainforest, the very lungs of our planet.",
-    audioUrl: elli_a09,
+    audio: elli_a09,
+    characterImageAnimated: satelliteGif,
     showOverlay: false,
     showSpotlight: false,
     action: () => {
@@ -83,7 +85,8 @@ export const createFireGlobeTour = (
     id: 'smoke-appears',
     title: '🛰️ Terra Satellite',
     description: "In 2004, I watched it struggle to breathe. My MODIS eye reveals these hazy clouds are not rain, but smoke, scarring the green landscape.",
-    audioUrl: elli_a10,
+    audio: elli_a10,
+    characterImageAnimated: satelliteGif,
     showOverlay: false,
     showSpotlight: false,
     action: (setIsAnimating) => {
@@ -120,7 +123,8 @@ export const createFireGlobeTour = (
     id: 'gaps-explanation',
     title: '🛰️ Terra Satellite',
     description: "My gaze is not all-seeing. I watch the world in sweeping glances as I pass overhead. Notice the dark gaps between these snapshots in time.",
-    audioUrl: elli_a11,
+    audio: elli_a11,
+    characterImageAnimated: satelliteGif,
     showOverlay: false,
     showSpotlight: false,
     action: () => {
@@ -142,7 +146,8 @@ export const createFireGlobeTour = (
     id: 'fire-fever',
     title: '🛰️ Terra Satellite',
     description: "But look closer. These points of light are the fires themselves—each one a fever on the surface.",
-    audioUrl: elli_a12,
+    audio: elli_a12,
+    characterImageAnimated: satelliteGif,
     showOverlay: false,
     showSpotlight: false,
     action: (setIsAnimating) => {
@@ -185,7 +190,8 @@ export const createFireGlobeTour = (
     id: 'mopitt-intro',
     title: '🛰️ Terra Satellite',
     description: "And with my MOPITT 'sniffer', we can see the invisible wound—the pollution left in the smoke. Let me switch my view to this sense and rewind the memory. Watch.",
-    audioUrl: elli_a13,
+    audio: elli_a13,
+    characterImageAnimated: satelliteGif,
     showOverlay: false,
     showSpotlight: false,
     action: () => {
@@ -204,7 +210,8 @@ export const createFireGlobeTour = (
     id: 'co-evolution',
     title: '🛰️ Terra Satellite',
     description: "It's a heavy thing to witness. But this was more than a single scar…",
-    audioUrl: elli_a14,
+    audio: elli_a14,
+    characterImageAnimated: satelliteGif,
     showOverlay: false,
     showSpotlight: false,
     action: (setIsAnimating) => {
@@ -239,7 +246,8 @@ export const createFireGlobeTour = (
     id: 'next-story',
     title: '🛰️ Terra Satellite',
     description: "It was a wound I watched reopen for two decades, unbalancing the sky. Now... let me jump forward and show you the consequences.",
-    audioUrl: elli_a15,
+    audio: elli_a15,
+    characterImageAnimated: satelliteGif,
     showOverlay: false,
     showSpotlight: false,
   },

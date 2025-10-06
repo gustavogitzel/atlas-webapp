@@ -25,6 +25,8 @@ export interface TourStep {
   onNext?: () => void; // Optional action before going to next step
   autoProgress?: boolean; // Automatically progress to next step after duration
   progressDuration?: number; // Duration in ms before auto-progressing (default 3000)
+  audio?: string; // Optional audio file URL to play during this step
+  characterImageAnimated?: string; // Optional animated GIF for character during audio
 }
 
 export interface GuidedTourProps {
@@ -46,6 +48,8 @@ export const GuidedTour = ({
 }: GuidedTourProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [interactionCompleted, setInteractionCompleted] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [currentCharacterImage, setCurrentCharacterImage] = useState(characterImage);
 
   const step = steps[currentStep];
   const isLastStep = currentStep === steps.length - 1;
@@ -64,6 +68,70 @@ export const GuidedTour = ({
     // Notificar mudança de step
     onStepChange?.(currentStep);
   }, [isOpen, step, currentStep, onStepChange]);
+
+  // Handle audio playback
+  useEffect(() => {
+    if (!isOpen || !step) {
+      setCurrentCharacterImage(characterImage);
+      return;
+    }
+
+    if (!step.audio) {
+      setCurrentCharacterImage(characterImage);
+      return;
+    }
+
+    console.log('🎵 Playing audio for step:', step.id, step.audio);
+
+    let audio: HTMLAudioElement | null = null;
+
+    // Use animated character image if available
+    if (step.characterImageAnimated) {
+      console.log('🎬 Using animated character:', step.characterImageAnimated);
+      setCurrentCharacterImage(step.characterImageAnimated);
+    }
+
+    // Create and play audio
+    audio = new Audio(step.audio);
+    audio.volume = 1.0;
+    setIsAudioPlaying(true);
+
+    // When audio ends, switch back to static image
+    const handleEnded = () => {
+      console.log('🔇 Audio ended for step:', step.id);
+      setIsAudioPlaying(false);
+      setCurrentCharacterImage(characterImage);
+    };
+
+    audio.addEventListener('ended', handleEnded);
+
+    // Play audio with error handling
+    const playPromise = audio.play();
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log('✅ Audio playing successfully');
+        })
+        .catch(error => {
+          console.error('❌ Error playing audio:', error);
+          setIsAudioPlaying(false);
+          setCurrentCharacterImage(characterImage);
+        });
+    }
+
+    // Cleanup
+    return () => {
+      if (audio) {
+        console.log('🧹 Cleaning up audio for step:', step.id);
+        audio.pause();
+        audio.currentTime = 0;
+        audio.removeEventListener('ended', handleEnded);
+      }
+      setIsAudioPlaying(false);
+      setCurrentCharacterImage(characterImage);
+    };
+  }, [isOpen, step, currentStep, characterImage]);
 
   useEffect(() => {
     if (!step.requiresInteraction || !step.interactionTarget) return;
@@ -162,7 +230,7 @@ export const GuidedTour = ({
             className="fixed left-8 bottom-8 z-[10001] pointer-events-none"
           >
             <GuideCharacter
-              imageUrl={characterImage}
+              imageUrl={currentCharacterImage}
               message={step.description}
               isActive
               showMessage

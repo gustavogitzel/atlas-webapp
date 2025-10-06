@@ -1,8 +1,24 @@
 import type { TourStep } from '@organisms/GuidedTour';
+import floodA16 from '@/assets/audios/flood_A16.mp3';
+import floodA17 from '@/assets/audios/flood_A17.mp3';
+import floodA18 from '@/assets/audios/flood_A18.mp3';
+import floodA19 from '@/assets/audios/flood_A19.mp3';
+import floodA20 from '@/assets/audios/flood_A20.mp3';
+import floodA21 from '@/assets/audios/flood_A21.mp3';
+import floodA22 from '@/assets/audios/flood_A22.mp3';
+import floodA23 from '@/assets/audios/flood_A23.mp3';
+import floodA24 from '@/assets/audios/flood_A24.mp3';
+import satelliteGif from '@/assets/gifs/Clipper.gif';
 
 /**
  * Flood Globe Tour - Rio Grande do Sul Flood Story
- * A narrative journey through the devastating 2024 floods
+ * A narrative journey    {
+      id: 'credits',
+      title: '🌍 Thank You',
+      description: "I've shared these stories with you for a reason. I can only watch... but you can act. It's your turn now. I'm giving you access to my controls.",
+      showOverlay: true,
+      showSpotlight: false,
+    },h the devastating 2024 floods
  */
 export const createFloodGlobeTour = (
   setCurrentDateIndex: (value: number) => void,
@@ -24,9 +40,35 @@ export const createFloodGlobeTour = (
   return [
     // Step 1: Introduction - Andes Mountains (19-APR-2024)
     {
-      id: 'andes-intro',
+      id: 'intro',
       title: '🛰️ Terra Satellite',
-      description: "It began with this giant wall in the sky—the Andes mountains, seen here with my ASTER 3D scanner.",
+      description: "In 2024, I saw what this imbalance could create. I saw that river in the sky, aimed at the heart of Southern Brazil... and I watched it become a weapon.",
+      audio: floodA16,
+      characterImageAnimated: satelliteGif,
+      showOverlay: false,
+      showSpotlight: false,
+      action: () => {
+        setSelectedBaseLayer('terrain-relief');
+        setSelectedLayers([]);
+        setCurrentDateIndex(findDateIndex('2024-04-19'));
+        
+        if (globeRef.current) {
+          globeRef.current.pointOfView({
+            lat: -20.4234,
+            lng: -59.3575,
+            altitude: 2.0,
+          }, 2000);
+        }
+      },
+    },
+
+    // Step 1: Introduction - Andes Mountains (19-APR-2024)
+    {
+      id: 'andes',
+      title: '🛰️ Terra Satellite',
+      description: "It began with this giant wall—the Andes mountains, seen here with my ASTER 3D scanner.",
+      audio: floodA17,
+      characterImageAnimated: satelliteGif,
       showOverlay: false,
       showSpotlight: false,
       action: () => {
@@ -48,7 +90,9 @@ export const createFloodGlobeTour = (
     {
       id: 'atmospheric-river',
       title: '🛰️ Terra Satellite',
-      description: "I then saw a 'river in the sky', some of it born from the Amazon itself, hit this wall and get funneled straight towards the region.",
+      description: "I then saw the 'river in the sky', born from a wounded Amazon, hit this wall and get funneled straight towards the region.",
+      audio: floodA18,
+      characterImageAnimated: satelliteGif,
       showOverlay: false,
       showSpotlight: false,
       action: () => {
@@ -56,21 +100,13 @@ export const createFloodGlobeTour = (
       },
     },
 
-    // Evolution: 19-APR to 28-APR-2024 (auto-progress)
-    { id: 'evo-apr20', title: '🛰️ Terra Satellite', description: "The atmospheric river flows...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-20')) },
-    { id: 'evo-apr21', title: '🛰️ Terra Satellite', description: "Moisture accumulates...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-21')) },
-    { id: 'evo-apr22', title: '🛰️ Terra Satellite', description: "Day by day...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-22')) },
-    { id: 'evo-apr23', title: '🛰️ Terra Satellite', description: "The pattern continues...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-23')) },
-    { id: 'evo-apr24', title: '🛰️ Terra Satellite', description: "Water vapor flows...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-24')) },
-    { id: 'evo-apr25', title: '🛰️ Terra Satellite', description: "Building up...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-25')) },
-    { id: 'evo-apr26', title: '🛰️ Terra Satellite', description: "Approaching the region...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-26')) },
-    { id: 'evo-apr27', title: '🛰️ Terra Satellite', description: "Almost there...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1500, action: () => setCurrentDateIndex(findDateIndex('2024-04-27')) },
-
     // Step 3: 28-APR-2024 - Focus on Rio Grande do Sul
     {
       id: 'rain-evolution',
       title: '🛰️ Terra Satellite',
       description: "For days, the rain fell without stopping.",
+      audio: floodA19,
+      characterImageAnimated: satelliteGif,
       showOverlay: false,
       showSpotlight: false,
       action: () => {
@@ -86,53 +122,22 @@ export const createFloodGlobeTour = (
       },
     },
 
-    // Evolution: 28-APR to 15-MAY-2024 (auto-progress)
-    { id: 'evo-apr29', title: '🛰️ Terra Satellite', description: "Rain continues...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-04-29')) },
-    { id: 'evo-apr30', title: '🛰️ Terra Satellite', description: "Day after day...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-04-30')) },
-    { id: 'evo-may01', title: '🛰️ Terra Satellite', description: "May begins...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-01')) },
-    { id: 'evo-may02', title: '🛰️ Terra Satellite', description: "Still raining...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-02')) },
-    { id: 'evo-may03', title: '🛰️ Terra Satellite', description: "Relentless...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-03')) },
-    { id: 'evo-may04', title: '🛰️ Terra Satellite', description: "No end in sight...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-04')) },
-    { id: 'evo-may05', title: '🛰️ Terra Satellite', description: "Water accumulates...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-05')) },
-    { id: 'evo-may06', title: '🛰️ Terra Satellite', description: "Rivers rising...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-06')) },
-    { id: 'evo-may07', title: '🛰️ Terra Satellite', description: "Week continues...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-07')) },
-    { id: 'evo-may08', title: '🛰️ Terra Satellite', description: "Still pouring...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-08')) },
-    { id: 'evo-may09', title: '🛰️ Terra Satellite', description: "Ongoing...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-09')) },
-    { id: 'evo-may10', title: '🛰️ Terra Satellite', description: "Mid-May...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-10')) },
-    { id: 'evo-may11', title: '🛰️ Terra Satellite', description: "Continuing...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-11')) },
-    { id: 'evo-may12', title: '🛰️ Terra Satellite', description: "Water everywhere...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-12')) },
-    { id: 'evo-may13', title: '🛰️ Terra Satellite', description: "Almost peak...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-13')) },
-    { id: 'evo-may14', title: '🛰️ Terra Satellite', description: "One more day...", showOverlay: false, showSpotlight: false, autoProgress: true, progressDuration: 1200, action: () => setCurrentDateIndex(findDateIndex('2024-05-14')) },
-
-    // Step 4: 15-MAY-2024 - Turn off overlay
     {
-      id: 'flood-peak',
+      id: 'rain-evolution',
       title: '🛰️ Terra Satellite',
-      description: "The water kept rising...",
+      description: "When the clouds finally cleared, I saw the silent tragedy that remained below.",
+      audio: floodA20,
+      characterImageAnimated: satelliteGif,
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        setCurrentDateIndex(findDateIndex('2024-05-15'));
-        setSelectedLayers([]);
-      },
-    },
-
-    // Step 5: Flood Detection - Turn on Flood 2-Day with zoom
-    {
-      id: 'flood-detection',
-      title: '🛰️ Terra Satellite',
-      description: "My MODIS eye then saw the rivers swell and spill over. The red you see here is the floodwaters, covering homes, fields, and lives.",
-      showOverlay: false,
-      showSpotlight: false,
-      action: () => {
-        setSelectedLayers(['flood-2day']);
+        setCurrentDateIndex(findDateIndex('2024-04-28'));
         
-        // Super zoom on Rio Grande do Sul to see flood details
         if (globeRef.current) {
           globeRef.current.pointOfView({
             lat: -29.6898,
             lng: -53.1485,
-            altitude: 0.3, // Super close zoom to see flood details
+            altitude: 1.2,
           }, 2000);
         }
       },
@@ -142,7 +147,9 @@ export const createFloodGlobeTour = (
     {
       id: 'final-message',
       title: '🛰️ Terra Satellite',
-      description: "This is what climate change looks like from space. But seeing is the first step to understanding, and understanding is the first step to action. Let me show you the before and after...",
+      description: "Move the slider to see the wound the water left behind. This is no longer a river... but a deep, bruised blue sea swallowing the land—a landscape of homes, fields, and lives submerged.",
+      audio: floodA21,
+      characterImageAnimated: satelliteGif,
       showOverlay: false,
       showSpotlight: false,
       action: () => {
@@ -154,7 +161,29 @@ export const createFloodGlobeTour = (
     {
       id: 'credits',
       title: '🌍 Thank You',
-      description: "Thank you for joining me on this journey through space and time. These stories are real, and they matter. Want to learn more about the data and technology behind these visualizations?",
+      description: "I can only record the scars. I cannot stop the tears.",
+      audio: floodA22,
+      characterImageAnimated: satelliteGif,
+      showOverlay: true,
+      showSpotlight: false,
+    },
+
+    {
+      id: 'credits',
+      title: '🌍 Thank You',
+      description: "I’ve shared these stories with you for a reason. I can only watch... but you can act. It’s your turn now. I’m giving you access to my controls.",
+      audio: floodA23,
+      characterImageAnimated: satelliteGif,
+      showOverlay: true,
+      showSpotlight: false,
+    },
+
+    {
+      id: 'credits',
+      title: '🌍 Thank You',
+      description: "You are now a Planet Guardian. Explore. Discover. If you find something important, save your story and share it. The more of us who are watching, the better we can protect our beautiful, fragile home.",
+      audio: floodA24,
+      characterImageAnimated: satelliteGif,
       showOverlay: true,
       showSpotlight: false,
     },

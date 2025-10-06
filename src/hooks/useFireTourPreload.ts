@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getLayerUrl, GLOBE_LAYERS } from '@/config/globeLayers';
+
+// Global cache to store preloaded images (persists across component remounts)
+const imageCache = new Map<string, HTMLImageElement>();
 
 /**
  * Hook to preload all images needed for the Fire Tour
  * Preloads images for specific dates used in the tour
+ * Stores images in memory cache for instant access
  */
 export const useFireTourPreload = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const cacheRef = useRef(imageCache);
 
   useEffect(() => {
     const preloadImages = async () => {
@@ -62,22 +67,37 @@ export const useFireTourPreload = () => {
 
       console.log(`🔥 Preloading ${urls.length} images for Fire Tour...`);
 
-      // Preload all images
+      // Check if already cached
+      const uncachedUrls = urls.filter(url => !cacheRef.current.has(url));
+      
+      if (uncachedUrls.length === 0) {
+        console.log(`✅ All images already in cache!`);
+        setProgress(100);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log(`📥 Loading ${uncachedUrls.length} new images...`);
+
+      // Preload all images and store in cache
       let loaded = 0;
-      const promises = urls.map(url => {
+      const promises = uncachedUrls.map(url => {
         return new Promise<void>((resolve) => {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           
           img.onload = () => {
+            // Store in cache
+            cacheRef.current.set(url, img);
             loaded++;
-            setProgress((loaded / urls.length) * 100);
+            setProgress((loaded / uncachedUrls.length) * 100);
             resolve();
           };
           
           img.onerror = () => {
+            console.warn(`Failed to load: ${url}`);
             loaded++;
-            setProgress((loaded / urls.length) * 100);
+            setProgress((loaded / uncachedUrls.length) * 100);
             resolve(); // Continue even if image fails
           };
           
@@ -86,12 +106,25 @@ export const useFireTourPreload = () => {
       });
 
       await Promise.all(promises);
-      console.log(`✅ Fire Tour preload complete!`);
+      console.log(`✅ Fire Tour preload complete! ${cacheRef.current.size} images in cache`);
       setIsLoading(false);
     };
 
     preloadImages();
   }, []);
 
-  return { isLoading, progress };
+  return { 
+    isLoading, 
+    progress,
+    cache: cacheRef.current // Expose cache for use in components
+  };
+};
+
+/**
+ * Get cached image URL
+ * Returns the cached image if available, otherwise returns the original URL
+ */
+export const getCachedImageUrl = (url: string): string => {
+  const cached = imageCache.get(url);
+  return cached?.src || url;
 };

@@ -70,12 +70,12 @@ export const ImageComparisonModal = ({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-2 md:p-4 pointer-events-none"
           >
-            <div className="pointer-events-auto">
-            <div className="bg-black/80 backdrop-blur-md border border-white/20 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="pointer-events-auto w-full h-full flex items-center justify-center">
+            <div className="bg-black/80 backdrop-blur-md border border-white/20 rounded-lg shadow-2xl w-[95vw] h-[95vh] md:w-[90vw] md:h-[90vh] flex flex-col overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-white/20">
+              <div className="flex items-center justify-between p-4 border-b border-white/20 flex-shrink-0">
                 <div>
                   <h2 className="text-xl font-bold text-white">{title}</h2>
                   {description && (
@@ -91,9 +91,9 @@ export const ImageComparisonModal = ({
               </div>
 
               {/* Image Comparison Container */}
-              <div className="p-4">
+              <div className="p-4 flex-1 flex items-center justify-center overflow-hidden">
                 <div
-                  className="relative w-full aspect-video bg-gray-900 rounded-lg overflow-hidden cursor-ew-resize select-none"
+                  className="relative w-full h-full bg-gray-900 rounded-lg overflow-hidden cursor-ew-resize select-none"
                   onMouseDown={handleMouseDown}
                   onMouseUp={handleMouseUp}
                   onMouseMove={handleMouseMove}

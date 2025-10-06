@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SplitText } from '@atoms/SplitText';
 import { ServiceWorkerStatus } from '@atoms/ServiceWorkerStatus';
 import { useSnapScroll, useIntersectionObserver } from '@/hooks';
+import gifsatelite from "../../assets/gifs/okok.gif";
+import gifworld from "../../assets/gifs/gif_world.gif";
+import clipperbase from "../../assets/images/clippercomfundo.png";
 
 import backgroundHome from '../../assets/images/background_home.jpg';
 
@@ -46,7 +49,6 @@ export const HomePage = ({ onStartExperience }: HomePageProps = {}) => {
   return (
     <div className="relative">
       {/* Service Worker Cache Status */}
-      <ServiceWorkerStatus />
       
       {/* Hero Section */}
       <div 
@@ -203,15 +205,14 @@ export const HomePage = ({ onStartExperience }: HomePageProps = {}) => {
             </p>
 
             {/* GIFs Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
               {[
-                "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDd6Y2F2dWF1OXE4MHBxOWF1dWx4NXN0Z2RmOWF1bDV0YnB1aXpmaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3978y5HqiEtqupiM/giphy.gif",
-                "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHpmM2RqbWN2ZjB1Y2wzOHYyb2VpN2VoOXBhMzF0ZmZ0bG0xdWx6aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT0xezQGU5xCDxyEi4/giphy.gif",
-                "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzRxY2kydDVpbjRtdXU1bDgxNmxqZm1yc2ZnYzZ5M2Z5OHR6cWRkeiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RHIKETUlUINYvV7CAO/giphy.gif"
+                gifsatelite,
+                gifworld
               ].map((gif, index) => (
                 <div 
                   key={index}
-                  className={`transform transition-all duration-1000 ${
+                  className={`bg-red transform transition-all duration-1000 ${
                     isAdventureSectionVisible 
                       ? 'translate-y-0 opacity-100' 
                       : 'translate-y-20 opacity-0'
@@ -221,7 +222,7 @@ export const HomePage = ({ onStartExperience }: HomePageProps = {}) => {
                   <img 
                     src={gif}
                     alt={`Space Adventure ${index + 1}`}
-                    className="rounded-lg shadow-lg w-full aspect-video object-cover"
+                    className="bg-red rounded-lg shadow-lg w-full aspect-video object-cover"
                   />
                 </div>
               ))}

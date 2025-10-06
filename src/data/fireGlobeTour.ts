@@ -27,6 +27,7 @@ export const createFireGlobeTour = (
 ): TourStep[] => {
   // Store interval references to clean up
   let activeIntervals: NodeJS.Timeout[] = [];
+  let hasExecuted: { [key: string]: boolean } = {};
   
   const clearAllIntervals = () => {
     activeIntervals.forEach(interval => clearInterval(interval));
@@ -62,10 +63,10 @@ export const createFireGlobeTour = (
       setShowCOLayer(false);
       setTimeGrouping('5-days');
       setCurrentDateIndex(findDateIndex('2004-07-22'));
-      
+
       // Open timeline control
       setIsTimelineCollapsed(false);
-      
+
       // Position camera on Amazon - zoom to view entire rainforest
       if (globeRef.current) {
         globeRef.current.pointOfView({
@@ -86,12 +87,15 @@ export const createFireGlobeTour = (
     showOverlay: false,
     showSpotlight: false,
     action: () => {
+      if (hasExecuted['smoke-appears']) return;
+      hasExecuted['smoke-appears'] = true;
+      
       clearAllIntervals();
       
       // Start evolving through dates every 5 days
       const dates = ['2004-07-27', '2004-08-01', '2004-08-06', '2004-08-11', '2004-08-16'];
       let index = 0;
-      
+        setShowCOLayer(false);
       const interval = setInterval(() => {
         if (index < dates.length) {
           setCurrentDateIndex(findDateIndex(dates[index]));
@@ -99,13 +103,13 @@ export const createFireGlobeTour = (
         } else {
           clearInterval(interval);
         }
-      }, 2000);
+      }, 1000);
       
       activeIntervals.push(interval);
     },
   },
 
-  // Step 6: Understanding My View (The Gaps)
+  // Step 6: Understanding My View (The Gaps) - Zoom closer
   {
     id: 'gaps-explanation',
     title: '🛰️ Terra Satellite',
@@ -113,6 +117,18 @@ export const createFireGlobeTour = (
     audioUrl: elli_a11,
     showOverlay: false,
     showSpotlight: false,
+    action: () => {
+        setShowCOLayer(false);
+
+      // Zoom closer to see fire points
+      if (globeRef.current) {
+        globeRef.current.pointOfView({
+          lat: -5.4326,
+          lng: -59.8870,
+          altitude: 0.8, // Closer zoom to see individual fire points
+        }, 2000);
+      }
+    },
   },
 
   // Step 7 Part 1: The Fever - Fire points focus (with auto-evolution to DEC)
@@ -124,8 +140,12 @@ export const createFireGlobeTour = (
     showOverlay: false,
     showSpotlight: false,
     action: () => {
-      clearAllIntervals();
+      if (hasExecuted['fire-fever']) return;
+      hasExecuted['fire-fever'] = true;
       
+      clearAllIntervals();
+
+      setShowCOLayer(false);
       // Auto-evolve through dates every 5 days from AUG to DEC
       const timeout = setTimeout(() => {
         const dates = [
@@ -143,7 +163,7 @@ export const createFireGlobeTour = (
           } else {
             clearInterval(interval);
           }
-        }, 1500);
+        }, 800);
         activeIntervals.push(interval);
       }, 1500);
       activeIntervals.push(timeout as any);
@@ -178,6 +198,9 @@ export const createFireGlobeTour = (
     showOverlay: false,
     showSpotlight: false,
     action: () => {
+      if (hasExecuted['co-evolution']) return;
+      hasExecuted['co-evolution'] = true;
+      
       clearAllIntervals();
       
       // Auto-evolve through monthly CO data
@@ -191,7 +214,7 @@ export const createFireGlobeTour = (
           } else {
             clearInterval(interval);
           }
-        }, 2500);
+        }, 1500);
         activeIntervals.push(interval);
       }, 2500);
       activeIntervals.push(timeout as any);
@@ -200,20 +223,11 @@ export const createFireGlobeTour = (
 
   // Step 7 Part 4: Final reflection
   {
-    id: 'final-reflection',
+    id: 'next-story',
     title: '🛰️ Terra Satellite',
     description: "It was a wound I watched reopen for two decades, unbalancing the sky. Now... let me jump forward and show you the consequences.",
     audioUrl: elli_a15,
     showOverlay: false,
-    showSpotlight: false,
-  },
-  
-  // Step 12: Next Story - Flood Globe
-  {
-    id: 'next-story',
-    title: '🌊 Continue the Journey',
-    description: "But this is not the only story I have to tell. In 2024, I witnessed another tragedy unfold—the devastating floods in Rio Grande do Sul, Brazil. Would you like to see what happened there?",
-    showOverlay: true,
     showSpotlight: false,
   },
 ];

@@ -1,15 +1,14 @@
 import type { TourStep } from '@organisms/GuidedTour';
-
 /**
  * Flood Globe Tour - Rio Grande do Sul Flood Story
  * A narrative journey through the devastating 2024 floods
  */
 export const createFloodGlobeTour = (
-  setCurrentDateIndex: (value: number) => void,
-  setSelectedBaseLayer: (value: string) => void,
-  setSelectedLayers: (value: string[]) => void,
+  setSelectedLayers: (layers: string[]) => void,
+  setCurrentDateIndex: (index: number) => void,
   globeRef: React.RefObject<any>,
-  uniqueDates: string[]
+  uniqueDates: string[],
+  setShowComparisonMarker?: (show: boolean) => void
 ): TourStep[] => {
   // Helper function to find date index
   const findDateIndex = (targetDate: string): number => {
@@ -30,7 +29,6 @@ export const createFloodGlobeTour = (
       showOverlay: false,
       showSpotlight: false,
       action: () => {
-        setSelectedBaseLayer('terrain-relief');
         setSelectedLayers([]);
         setCurrentDateIndex(findDateIndex('2024-04-19'));
         
@@ -117,17 +115,30 @@ export const createFloodGlobeTour = (
       },
     },
 
-    // Step 5: Flood Detection - Turn on Flood 2-Day with zoom
+    // Step 5: Flood Detection - Turn on Flood 2-Day
     {
       id: 'flood-detection',
       title: '🛰️ Terra Satellite',
-      description: "My MODIS eye then saw the rivers swell and spill over. The red you see here is the floodwaters, covering homes, fields, and lives.",
+      description: "My MODIS eye saw the rivers swell and spill over. On my map, these red scars show where the water claimed the land.",
       showOverlay: false,
       showSpotlight: false,
       action: () => {
         setSelectedLayers(['flood-2day']);
+      },
+    },
+
+    // Step 6: Final message - Zoom to Rio Grande do Sul and show marker
+    {
+      id: 'final-message',
+      title: '🛰️ Terra Satellite',
+      description: "This is what climate change looks like from space. But seeing is the first step to understanding, and understanding is the first step to action. Click on the red marker to see the before and after, then click Next when you're ready...",
+      showOverlay: false,
+      showSpotlight: false,
+      action: () => {
+        // Keep flood layer active
+        setSelectedLayers(['flood-2day']);
         
-        // Super zoom on Rio Grande do Sul to see flood details
+        // Super zoom on Rio Grande do Sul with flood overlay
         if (globeRef.current) {
           globeRef.current.pointOfView({
             lat: -29.6898,
@@ -135,22 +146,26 @@ export const createFloodGlobeTour = (
             altitude: 0.3, // Super close zoom to see flood details
           }, 2000);
         }
+        
+        // Show marker after zoom completes
+        setTimeout(() => {
+          if (setShowComparisonMarker) {
+            setShowComparisonMarker(true);
+          }
+        }, 2500); // Wait for zoom animation to complete
       },
     },
 
-    // Step 6: Final message with comparison
+    // Step 7: Comparison explanation (shown when modal opens)
     {
-      id: 'final-message',
+      id: 'comparison-explanation',
       title: '🛰️ Terra Satellite',
-      description: "This is what climate change looks like from space. But seeing is the first step to understanding, and understanding is the first step to action. Let me show you the before and after...",
-      showOverlay: false,
+      description: "Move the slider to see the wound the water left behind. This is no longer a river... but a deep, bruised blue sea swallowing the land—a landscape of homes, fields, and lives submerged.",
+      showOverlay: true,
       showSpotlight: false,
-      action: () => {
-        setSelectedLayers([]);
-      },
     },
 
-    // Step 7: Credits
+    // Step 8: Credits
     {
       id: 'credits',
       title: '🌍 Thank You',

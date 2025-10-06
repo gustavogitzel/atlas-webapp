@@ -14,6 +14,7 @@ export interface TourStep {
   id: string;
   title: string;
   description: string;
+  audioUrl?: string; // Optional audio narration for the step
   target?: string; // CSS selector for the element to highlight (optional for intro steps)
   position?: 'top' | 'bottom' | 'left' | 'right';
   showOverlay?: boolean; // Show dark overlay (default true)
@@ -64,6 +65,22 @@ export const GuidedTour = ({
     // Notificar mudança de step
     onStepChange?.(currentStep);
   }, [isOpen, step, currentStep, onStepChange]);
+
+  // Play audio narration when step changes
+  useEffect(() => {
+    if (!isOpen || !step?.audioUrl) return;
+
+    const audio = new Audio(step.audioUrl);
+    audio.play().catch(error => {
+      console.warn('Failed to play audio:', error);
+    });
+
+    // Cleanup: stop audio when step changes or tour closes
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [isOpen, step?.audioUrl, currentStep]);
 
   useEffect(() => {
     if (!step.requiresInteraction || !step.interactionTarget) return;

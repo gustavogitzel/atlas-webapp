@@ -69,6 +69,16 @@ export const CreditsPage = () => {
           <h2 className="text-2xl font-spartan font-bold mb-6 flex items-center gap-2 tracking-wide">
             👥 TEAM
           </h2>
+          <p className="text-gray-200 font-poppins text-lg mb-6">
+            <ul>
+              <li>Antônio Hideto Borges Kotsubo - Developer</li>
+              <li>Gabriel Freitas Pinheiro - Data Scientist</li>
+              <li>Guilherme Leite Bruzão - Data Scientist</li>
+              <li>Gustavo Ferreira Gitzel - Developer</li>
+              <li>Lucas Gabriel Monteiro da Costa - Developer</li>
+              <li>Pietro Grazzioli Golfeto - Project Manager</li>
+            </ul>
+          </p>
           <p className="text-gray-200 font-poppins text-lg">
             Created for the NASA Space Apps Challenge 2025
           </p>

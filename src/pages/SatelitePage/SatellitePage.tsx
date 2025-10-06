@@ -117,6 +117,7 @@ export const SatellitePage = () => {
   const [conclusionAudioPlayed, setConclusionAudioPlayed] = useState(false);
   const [useConclusionAnimatedAvatar, setUseConclusionAnimatedAvatar] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
   // Array de áudios para cada etapa
   const stepAudios = [
@@ -137,6 +138,7 @@ export const SatellitePage = () => {
 
   // Handle audio end - Switch to static avatar
   const handleAudioEnd = () => {
+    setIsAudioPlaying(false);
     if (showTour) {
       setUseAnimatedAvatar(false);
     } else {
@@ -198,6 +200,7 @@ export const SatellitePage = () => {
       if (audioRef.current) {
         // Reset avatar to animated when step changes
         setUseAnimatedAvatar(true);
+        setIsAudioPlaying(true);
         
         try {
           // Special delay for first step to ensure proper initialization
@@ -236,6 +239,7 @@ export const SatellitePage = () => {
         if (audioRef.current) {
           setUseConclusionAnimatedAvatar(true);
           setConclusionAudioPlayed(true);
+          setIsAudioPlaying(true);
           
           try {
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -530,7 +534,12 @@ export const SatellitePage = () => {
               {/* Next Button */}
               <button
                 onClick={handleNextStep}
-                className="flex-1 px-4 py-3 rounded-lg bg-blue-500 border border-blue-400 text-white hover:bg-blue-600 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 font-spartan font-bold shadow-lg shadow-blue-500/50"
+                disabled={isAudioPlaying}
+                className={`flex-1 px-4 py-3 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 font-spartan font-bold ${
+                  isAudioPlaying
+                    ? 'bg-gray-800/50 border-gray-700 text-gray-600 cursor-not-allowed'
+                    : 'bg-blue-500 border-blue-400 text-white hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/50'
+                }`}
               >
                 {currentTourStep === tourSteps.length - 1 ? 'CONTINUE' : 'NEXT'}
                 <ChevronRight className="w-5 h-5" />
